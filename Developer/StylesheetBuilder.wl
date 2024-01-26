@@ -10,7 +10,9 @@ ClearAll[ "`*" ];
 ClearAll[ "`Private`*" ];
 
 $ChatbookStylesheet;
+$DefaultStylesheet;
 BuildChatbookStylesheet;
+BuildDefaultStylesheet;
 
 System`LinkedItems;
 System`MenuAnchor;
@@ -31,14 +33,16 @@ Begin[ "`Private`" ];
 (*Paths*)
 
 
-$assetLocation        = FileNameJoin @ { DirectoryName @ $InputFileName, "Resources" };
-$iconDirectory        = FileNameJoin @ { $assetLocation, "Icons" };
-$ninePatchDirectory   = FileNameJoin @ { $assetLocation, "NinePatchImages" };
-$styleDataFile        = FileNameJoin @ { $assetLocation, "Styles.wl" };
-$pacletDirectory      = DirectoryName[ $InputFileName, 2 ];
-$iconManifestFile     = FileNameJoin @ { $pacletDirectory, "Assets", "Icons.wxf" };
-$displayFunctionsFile = FileNameJoin @ { $pacletDirectory, "Assets", "DisplayFunctions.wxf" };
-$styleSheetTarget     = FileNameJoin @ { $pacletDirectory, "FrontEnd", "StyleSheets", "Chatbook.nb" };
+$assetLocation           = FileNameJoin @ { DirectoryName @ $InputFileName, "Resources" };
+$iconDirectory           = FileNameJoin @ { $assetLocation, "Icons" };
+$ninePatchDirectory      = FileNameJoin @ { $assetLocation, "NinePatchImages" };
+$styleDataFile           = FileNameJoin @ { $assetLocation, "Styles.wl" };
+$defaultStyleDataFile    = FileNameJoin @ { $assetLocation, "DefaultStyles.wl" };
+$pacletDirectory         = DirectoryName[ $InputFileName, 2 ];
+$iconManifestFile        = FileNameJoin @ { $pacletDirectory, "Assets", "Icons.wxf" };
+$displayFunctionsFile    = FileNameJoin @ { $pacletDirectory, "Assets", "DisplayFunctions.wxf" };
+$styleSheetTarget        = FileNameJoin @ { $pacletDirectory, "FrontEnd", "StyleSheets", "Chatbook.nb" };
+$defaultStyleSheetTarget = FileNameJoin @ { $pacletDirectory, "FrontEnd", "StyleSheets", "Default.nb" };
 
 
 
@@ -518,7 +522,8 @@ inlineResources[ expr_ ] := expr /. {
 (*$styleDataCells*)
 
 
-$styleDataCells = inlineResources @ Cases[ Flatten @ ReadList @ $styleDataFile, _Cell ];
+$styleDataCells        = inlineResources @ Cases[ Flatten @ ReadList @ $styleDataFile, _Cell ];
+$defaultStyleDataCells = inlineResources @ Cases[ Flatten @ ReadList @ $defaultStyleDataFile, _Cell ];
 
 
 
@@ -561,6 +566,15 @@ $ChatbookStylesheet = Notebook[
 ];
 
 
+$DefaultStylesheet = Notebook[
+    Flatten @ {
+        Cell @ StyleData[ StyleDefinitions -> "Default.nb" ],
+        $defaultStyleDataCells
+    },
+    StyleDefinitions -> "PrivateStylesheetFormatting.nb"
+];
+
+
 
 (* ::Section::Closed:: *)
 (*BuildChatbookStylesheet*)
@@ -572,6 +586,31 @@ BuildChatbookStylesheet[ target_ ] :=
     Block[ { $Context = "Global`", $ContextPath = { "System`", "Global`" } },
         Module[ { exported },
             exported = Export[ target, $ChatbookStylesheet, "NB" ];
+            PacletInstall[ "Wolfram/PacletCICD" ];
+            Needs[ "Wolfram`PacletCICD`" -> None ];
+            SetOptions[
+                ResourceFunction[ "SaveReadableNotebook" ],
+                "RealAccuracy" -> 10,
+                "ExcludedNotebookOptions" -> {
+                    ExpressionUUID,
+                    FrontEndVersion,
+                    WindowMargins,
+                    WindowSize
+                }
+            ];
+            Wolfram`PacletCICD`FormatNotebooks @ exported;
+            exported
+        ]
+    ];
+
+
+
+BuildDefaultStylesheet[ ] := BuildDefaultStylesheet @ $defaultStyleSheetTarget;
+
+BuildDefaultStylesheet[ target_ ] :=
+    Block[ { $Context = "Global`", $ContextPath = { "System`", "Global`" } },
+        Module[ { exported },
+            exported = Export[ target, $DefaultStylesheet, "NB" ];
             PacletInstall[ "Wolfram/PacletCICD" ];
             Needs[ "Wolfram`PacletCICD`" -> None ];
             SetOptions[
