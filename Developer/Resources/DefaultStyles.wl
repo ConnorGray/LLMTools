@@ -38,7 +38,10 @@ Cell[
 
 Cell[
     StyleData[ "ChatStyleSheetInformation" ],
-    TaggingRules -> <| "StyleSheetVersion" -> $stylesheetVersion |>
+    TaggingRules -> <|
+        "StyleSheetVersion" -> $stylesheetVersion,
+        "StyleSheetName"    -> "Default.nb"
+    |>
 ]
 
 
