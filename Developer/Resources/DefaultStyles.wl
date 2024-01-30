@@ -3,6 +3,16 @@
 Begin[ "Wolfram`ChatbookStylesheetBuilder`Private`" ];
 
 
+(* TODO: need to figure out a way to support the following in the default stylesheet:
+
+    * CellTrayWidgets: These don't play well with the gear menu
+        * ChatIncluded: The blue bar that appears in cell brackets when mousing over a ChatInput is disabled
+        * ChatWidget: The "Send to LLM" button that appears on mouseover for other cells is disabled
+    * AccentStyle: Disabled since the ChatIncluded widget is disabled
+    * ContextMenus: Disabled since there doesn't seem to be a nice way of inheriting the parent list
+    * Assistance: Disabled so we don't hijack the CellEpilog option for all notebooks
+*)
+
 
 (* ::Section::Closed:: *)
 (*Notebook*)
