@@ -11,31 +11,44 @@ If[ ! TrueQ @ $loadedDefinitions, Get @ FileNameJoin @ { DirectoryName @ $InputF
 (*Initialization*)
 Needs[ "Wolfram`PacletCICD`" -> "cicd`" ];
 
+removeExistingStylesheet[ file_ ] :=
+    If[ FileExistsQ @ file,
+        cicd`ConsoleLog @ SequenceForm[ "Removing existing stylesheet file: ", file ];
+        cicd`ScriptConfirm @ DeleteFile @ file;
+        cicd`ScriptConfirmBy[ file, Not@*FileExistsQ ],
+        file
+    ];
+
 (* ::**************************************************************************************************************:: *)
 (* ::Section::Closed:: *)
 (*Paths*)
-$stylesheetFile = cStr @ FileNameJoin @ { $pacletDir, "FrontEnd", "StyleSheets", "Chatbook.nb" };
-$builderFile    = cFile @ FileNameJoin @ { $pacletDir, "Developer", "StylesheetBuilder.wl" };
+
+(* The chatbook stylesheet containing all features used for chat-enabled and chat-driven notebooks: *)
+$chatbookStylesheetFile = cStr @ FileNameJoin @ { $pacletDir, "FrontEnd", "StyleSheets", "Chatbook.nb" };
+$defaultStylesheetFile  = cStr @ FileNameJoin @ { $pacletDir, "FrontEnd", "StyleSheets", "ChatbookDefault.nb" };
+
+(* The package file containing the definitions for building stylesheets: *)
+$builderFile = cFile @ FileNameJoin @ { $pacletDir, "Developer", "StylesheetBuilder.wl" };
 
 (* ::**************************************************************************************************************:: *)
 (* ::Section::Closed:: *)
 (*Build Stylesheet*)
-If[ FileExistsQ @ $stylesheetFile,
-    cicd`ConsoleLog @ SequenceForm[ "Removing existing stylesheet file: ", $stylesheetFile ];
-    cicd`ScriptConfirm @ DeleteFile @ $stylesheetFile;
+
+(* Remove existing stylesheet files if they exist: *)
+removeExistingStylesheet @ $chatbookStylesheetFile;
+removeExistingStylesheet @ $defaultStylesheetFile;
+
+(* Build the stylesheets: *)
+cicd`ConsoleLog[ "Building stylesheets..." ];
+contextBlock @ UsingFrontEnd[
+    cicd`ScriptConfirm @ CheckAbort[ Get @ $builderFile, $Failed ];
+    result = <|
+        "Chatbook" -> cFile @ Wolfram`ChatbookStylesheetBuilder`BuildChatbookStylesheet[ ],
+        "Default"  -> cFile @ Wolfram`ChatbookStylesheetBuilder`BuildDefaultStylesheet[ ]
+    |>;
 ];
 
-cicd`ScriptConfirmAssert[ ! FileExistsQ @ $stylesheetFile ];
-
-cicd`ConsoleLog[ "Building stylesheet..." ];
-Block[ { $Context = "Global`", $ContextPath = { "System`", "Global`" }, $ContextAliases = $ContextAliases },
-    UsingFrontEnd[
-        cicd`ScriptConfirm @ CheckAbort[ Get @ $builderFile, $Failed ];
-        result = cicd`ScriptConfirmBy[ Wolfram`ChatbookStylesheetBuilder`BuildChatbookStylesheet[ ], FileExistsQ ];
-    ];
-];
-
-cicd`ConsoleLog @ SequenceForm[ "Built stylesheet: ", result ];
+cicd`ConsoleLog @ SequenceForm[ "Built stylesheets: ", result ];
 
 (* :!CodeAnalysis::EndBlock:: *)
 

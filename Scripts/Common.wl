@@ -356,6 +356,16 @@ noExit    := Wolfram`PacletCICD`Private`noExit;
 setOutput := Wolfram`PacletCICD`Private`setOutput;
 
 (* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*contextBlock*)
+contextBlock // ClearAll;
+contextBlock // Attributes = { HoldAllComplete };
+contextBlock[ eval_ ] :=
+    Block[ { $Context = "Global`", $ContextPath = { "System`", "Global`" }, $ContextAliases = $ContextAliases },
+        eval
+    ];
+
+(* ::**************************************************************************************************************:: *)
 (* ::Section::Closed:: *)
 (*Setup*)
 Print[ "Paclet Directory: ", $pacletDir ];

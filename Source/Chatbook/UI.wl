@@ -491,10 +491,10 @@ MakeChatInputCellDingbat[] :=
 (* ::Subsection::Closed:: *)
 (*MakeChatDelimiterCellDingbat*)
 MakeChatDelimiterCellDingbat[ ] :=
-	DynamicModule[ { cell },
-		trackedDynamic[ MakeChatDelimiterCellDingbat @ cell, { "ChatBlock" } ],
+	DynamicModule[ { $CellContext`cell },
+		trackedDynamic[ MakeChatDelimiterCellDingbat @ $CellContext`cell, { "ChatBlock" } ],
 		Initialization :> (
-			cell = EvaluationCell[ ];
+			$CellContext`cell = EvaluationCell[ ];
 			Needs[ "Wolfram`Chatbook`" -> None ];
 			updateDynamics[ "ChatBlock" ]
 		),
@@ -502,7 +502,7 @@ MakeChatDelimiterCellDingbat[ ] :=
 			Needs[ "Wolfram`Chatbook`" -> None ];
 			updateDynamics[ "ChatBlock" ]
 		),
-		UnsavedVariables :> { cell }
+		UnsavedVariables :> { $CellContext`cell }
 	];
 
 MakeChatDelimiterCellDingbat[cell_CellObject] := Module[{
