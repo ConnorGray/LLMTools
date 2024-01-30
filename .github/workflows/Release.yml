@@ -101,6 +101,9 @@ jobs:
     - name: BuildMX
       run: wolframscript -f Scripts/BuildMX.wls
 
+    - name: RegenerateStylesheetCaches
+      run: wolframscript -f Scripts/RegenerateStylesheetCaches.wls
+
     - name: Submit
       uses: WolframResearch/submit-paclet@v1.11.0
 
