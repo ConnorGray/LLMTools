@@ -621,7 +621,7 @@ BuildDefaultStylesheet[ ] := BuildDefaultStylesheet @ $defaultStyleSheetTarget;
 BuildDefaultStylesheet[ target_ ] :=
     Block[ { $Context = "Global`", $ContextPath = { "System`", "Global`" } },
         Module[ { exported },
-            exported = Export[ target, $DefaultStylesheet, "NB" ];
+            exported = Export[ target, fixContexts @ $DefaultStylesheet, "NB" ];
             PacletInstall[ "Wolfram/PacletCICD" ];
             Needs[ "Wolfram`PacletCICD`" -> None ];
             SetOptions[
