@@ -42,7 +42,7 @@ $pacletDirectory         = DirectoryName[ $InputFileName, 2 ];
 $iconManifestFile        = FileNameJoin @ { $pacletDirectory, "Assets", "Icons.wxf" };
 $displayFunctionsFile    = FileNameJoin @ { $pacletDirectory, "Assets", "DisplayFunctions.wxf" };
 $styleSheetTarget        = FileNameJoin @ { $pacletDirectory, "FrontEnd", "StyleSheets", "Chatbook.nb" };
-$defaultStyleSheetTarget = FileNameJoin @ { $pacletDirectory, "FrontEnd", "StyleSheets", "Default.nb" };
+$defaultStyleSheetTarget = FileNameJoin @ { $pacletDirectory, "FrontEnd", "StyleSheets", "ChatbookDefault.nb" };
 
 
 
