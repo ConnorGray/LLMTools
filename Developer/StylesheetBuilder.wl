@@ -846,6 +846,7 @@ BuildStylesheets[                       ] := BuildStylesheets @ All;
 BuildStylesheets[ All | Automatic       ] := BuildStylesheets @ $validStylesheetNames;
 BuildStylesheets[ styles: { ___String } ] := AssociationMap[ BuildStylesheets, styles ];
 BuildStylesheets[ "Chatbook"            ] := BuildChatbookStylesheet[ ];
+BuildStylesheets[ "Default"             ] := BuildDefaultStylesheet[ ];
 BuildStylesheets[ "WorkspaceChat"       ] := BuildWorkspaceStylesheet[ ];
 
 BuildStylesheets[ style_String ] := Failure[
@@ -865,7 +866,7 @@ BuildStylesheets[ other___ ] := Failure[
 ];
 
 
-$validStylesheetNames = { "Chatbook", "WorkspaceChat" };
+$validStylesheetNames = { "Chatbook", "Default", "WorkspaceChat" };
 
 (* ::Section::Closed:: *)
 (*BuildChatbookStylesheet*)
@@ -942,11 +943,17 @@ BuildWorkspaceStylesheet[ target_ ] :=
 CompileTemplateData[ ] := Developer`WriteWXFFile[ $displayFunctionsFile, fixContexts @ $templateBoxDisplayFunctions ];
 
 
+
+(* ::Section::Closed:: *)
+(*BuildDefaultStylesheet*)
+
+
 BuildDefaultStylesheet[ ] := BuildDefaultStylesheet @ $defaultStyleSheetTarget;
 
 BuildDefaultStylesheet[ target_ ] :=
     Block[ { $Context = "Global`", $ContextPath = { "System`", "Global`" } },
         Module[ { exported },
+            CompileTemplateData[ ];
             exported = Export[ target, fixContexts @ $DefaultStylesheet, "NB" ];
             PacletInstall[ "Wolfram/PacletCICD" ];
             Needs[ "Wolfram`PacletCICD`" -> None ];
