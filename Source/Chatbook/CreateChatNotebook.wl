@@ -9,12 +9,14 @@ HoldComplete[
 
 Begin[ "`Private`" ];
 
-Needs[ "Wolfram`Chatbook`"            ];
-Needs[ "Wolfram`Chatbook`Common`"     ];
-Needs[ "Wolfram`Chatbook`Formatting`" ];
-Needs[ "Wolfram`Chatbook`SendChat`"   ];
-Needs[ "Wolfram`Chatbook`Settings`"   ];
-Needs[ "Wolfram`Chatbook`UI`"         ];
+Needs[ "Wolfram`Chatbook`"        ];
+Needs[ "Wolfram`Chatbook`Common`" ];
+Needs[ "Wolfram`Chatbook`UI`"     ];
+
+(* ::**************************************************************************************************************:: *)
+(* ::Section::Closed:: *)
+(*Config*)
+$unsavedSettings = { "InitialChatCell", "TargetCloudObject" };
 
 (* ::**************************************************************************************************************:: *)
 (* ::Section::Closed:: *)
@@ -24,6 +26,7 @@ $$createChatOptions = OptionsPattern[ { CreateChatNotebook, Notebook } ];
 (* ::**************************************************************************************************************:: *)
 (* ::Section::Closed:: *)
 (*CreateChatNotebook*)
+Needs[ "Wolfram`Chatbook`Settings`" ]; (* Needed for $defaultChatSettings *)
 CreateChatNotebook // Options = Normal[ $defaultChatSettings, Association ];
 
 
@@ -89,17 +92,29 @@ createChatNotebook // endDefinition;
 (*createCloudChatNotebook*)
 createCloudChatNotebook // beginDefinition;
 
-createCloudChatNotebook[ opts: OptionsPattern[ CreateChatNotebook ] ] :=
-    Module[ { settings, options, notebook, deployed },
-        settings = makeChatNotebookSettings @ Association @ FilterRules[ { opts }, Options @ CreateChatNotebook ];
-        options  = makeChatNotebookOptions[ settings, opts ];
-        notebook = Notebook[ Flatten @ { initialChatCells @ opts }, options ];
-        deployed = CloudDeploy[ notebook, CloudObjectURLType -> "Environment" ];
+createCloudChatNotebook[ opts: OptionsPattern[ CreateChatNotebook ] ] := Enclose[
+    Module[ { validOpts, settings, options, notebook, location, deployed },
+        validOpts = FilterRules[ { opts }, Options @ CreateChatNotebook ];
+        settings  = makeChatNotebookSettings @ Association @ validOpts;
+        options   = makeChatNotebookOptions[ settings, opts ];
+        notebook  = Notebook[ ConfirmMatch[ Flatten @ { initialChatCells @ opts }, { ___Cell }, "Cells" ], options ];
+        location  = OptionValue[ CreateChatNotebook, validOpts, "TargetCloudObject" ];
+        deployed  = ConfirmMatch[ deployCloudNotebook[ notebook, location ], _CloudObject, "Deploy" ];
         SystemOpen @ deployed;
         deployed
-    ];
+    ],
+    throwInternalFailure
+];
 
 createCloudChatNotebook // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*deployCloudNotebook*)
+deployCloudNotebook // beginDefinition;
+deployCloudNotebook[ nb_Notebook, obj_CloudObject ] := CloudDeploy[ nb, obj, CloudObjectURLType -> "Environment" ];
+deployCloudNotebook[ nb_Notebook, _ ] := CloudDeploy[ nb, CloudObjectURLType -> "Environment" ];
+deployCloudNotebook // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsubsection::Closed:: *)
@@ -185,7 +200,12 @@ CreateChatDrivenNotebook[ opts: $$createChatOptions ] :=
 (* ::Subsection::Closed:: *)
 (*makeChatNotebookSettings*)
 makeChatNotebookSettings // beginDefinition;
-makeChatNotebookSettings[ as_Association? AssociationQ ] := KeySort @ KeyMap[ ToString, as ];
+
+makeChatNotebookSettings[ as_Association? AssociationQ ] := KeyDrop[
+    KeySort @ KeyMap[ ToString, as ],
+    $unsavedSettings
+];
+
 makeChatNotebookSettings // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
@@ -241,12 +261,13 @@ createMessageCell // endDefinition;
 createMessageCell0 // beginDefinition;
 
 createMessageCell0[ as_Association, msg_Association ] := Enclose[
-    Module[ { role, content },
+    Module[ { role, content, string },
         role = ToLowerCase @ ConfirmBy[ msg[ "role" ], StringQ, "Role" ];
-        content = ConfirmBy[ msg[ "content" ], StringQ, "Content" ];
-        createMessageCell0[ as, role, content ]
+        content = ConfirmMatch[ msg[ "content" ], _String|_Association, "Content" ];
+        string = ConfirmBy[ If[ StringQ @ content, content, content[ "Data" ] ], StringQ, "String" ];
+        createMessageCell0[ as, role, string ]
     ],
-    throwInternalFailure[ createMessageCell0[ as, msg ], ## ] &
+    throwInternalFailure
 ];
 
 createMessageCell0[ as_Association, "assistant", content_String ] :=
@@ -266,8 +287,8 @@ createMessageCell0 // endDefinition;
 (* ::**************************************************************************************************************:: *)
 (* ::Section::Closed:: *)
 (*Package Footer*)
-If[ Wolfram`ChatbookInternal`$BuildingMX,
-    Null;
+addToMXInitialization[
+    Null
 ];
 
 End[ ];

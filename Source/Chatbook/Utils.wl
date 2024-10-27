@@ -1,33 +1,19 @@
 (* ::Section::Closed:: *)
 (*Package Header*)
 BeginPackage[ "Wolfram`Chatbook`Utils`" ];
-
-HoldComplete[
-    `associationKeyDeflatten;
-    `clickToCopy;
-    `convertUTF8;
-    `exportDataURI;
-    `fastFileHash;
-    `fileFormatQ;
-    `fixLineEndings;
-    `formatToMIMEType;
-    `getPinkBoxErrors;
-    `graphicsQ;
-    `image2DQ;
-    `importDataURI;
-    `makeFailureString;
-    `mimeTypeToFormat;
-    `readString;
-    `stringTrimMiddle;
-    `validGraphicsQ;
-];
-
 Begin[ "`Private`" ];
 
 Needs[ "Wolfram`Chatbook`"        ];
 Needs[ "Wolfram`Chatbook`Common`" ];
 
-(* cSpell: ignore deflatten *)
+(* ::**************************************************************************************************************:: *)
+(* ::Section::Closed:: *)
+(*Config*)
+$tinyHashLength = 5;
+
+$messageToStringDelimiter = "\n\n";
+$messageToStringTemplate  = StringTemplate[ "`Role`: `Content`" ];
+
 (* ::**************************************************************************************************************:: *)
 (* ::Section::Closed:: *)
 (*AssociationKeyDeflatten*)
@@ -42,7 +28,74 @@ importResourceFunction[ clickToCopy, "ClickToCopy" ];
 
 (* ::**************************************************************************************************************:: *)
 (* ::Section::Closed:: *)
+(*RelativeTimeString*)
+(* https://resources.wolframcloud.com/FunctionRepository/resources/RelativeTimeString *)
+importResourceFunction[ relativeTimeString, "RelativeTimeString" ];
+
+(* ::**************************************************************************************************************:: *)
+(* ::Section::Closed:: *)
+(*SelectByCurrentValue*)
+(* https://resources.wolframcloud.com/FunctionRepository/resources/SelectByCurrentValue *)
+importResourceFunction[ selectByCurrentValue, "SelectByCurrentValue" ];
+
+(* ::**************************************************************************************************************:: *)
+(* ::Section::Closed:: *)
 (*Strings*)
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*messagesToString*)
+messagesToString // beginDefinition;
+
+messagesToString // Options = {
+    "IncludeSystemMessage"     -> False,
+    "IncludeTemporaryMessages" -> False,
+    "MessageDelimiter"         -> $messageToStringDelimiter,
+    "MessageTemplate"          -> $messageToStringTemplate
+};
+
+messagesToString[ { }, opts: OptionsPattern[ ] ] :=
+    "";
+
+messagesToString[ messages0_, opts: OptionsPattern[ ] ] := Enclose[
+    Catch @ Module[ { messages, system, temporary, template, delimiter, reverted, strings },
+
+        messages = ConfirmMatch[ messages0, $$chatMessages, "Messages" ];
+
+        (* Check if the system messages should be included: *)
+        system = ConfirmMatch[ OptionValue[ "IncludeSystemMessage" ], True|False, "System" ];
+        If[ ! system, messages = Replace[ messages, { KeyValuePattern[ "Role" -> "System" ], m___ } :> { m } ] ];
+        If[ messages === { }, Throw[ "" ] ];
+
+        (* Check if the temporary messages should be included: *)
+        temporary = ConfirmMatch[ OptionValue[ "IncludeTemporaryMessages" ], True|False, "Temporary" ];
+        If[ ! temporary, messages = DeleteCases[ messages, KeyValuePattern[ "Temporary" -> True ] ] ];
+        If[ messages === { }, Throw[ "" ] ];
+
+        template = ConfirmMatch[ OptionValue[ "MessageTemplate" ], _String|_TemplateObject|None, "Template" ];
+        delimiter = ConfirmMatch[ OptionValue[ "MessageDelimiter" ], _String, "Delimiter" ];
+
+        reverted = ConfirmMatch[
+            revertMultimodalContent @ messages,
+            { KeyValuePattern[ "Content" -> _String ].. },
+            "Reverted"
+        ];
+
+        strings = ConfirmMatch[
+            If[ template === None, Lookup[ reverted, "Content" ], TemplateApply[ template, # ] & /@ reverted ],
+            { __String },
+            "Strings"
+        ];
+
+        ConfirmBy[ StringRiffle[ strings, delimiter ], StringQ, "Result" ]
+    ],
+    throwInternalFailure
+];
+
+messagesToString[ { messages__ }, assistant_String, opts: OptionsPattern[ ] ] :=
+    messagesToString[ { messages, <| "Role" -> "Assistant", "Content" -> assistant |> }, opts ];
+
+messagesToString // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsection::Closed:: *)
@@ -65,6 +118,7 @@ convertUTF8 // endDefinition;
 (*stringTrimMiddle*)
 stringTrimMiddle // beginDefinition;
 stringTrimMiddle[ str_String, Infinity ] := str;
+stringTrimMiddle[ str_String, 0 ] := "";
 stringTrimMiddle[ str_String, max_Integer? Positive ] := stringTrimMiddle[ str, Ceiling[ max / 2 ], Floor[ max / 2 ] ];
 stringTrimMiddle[ str_String, l_Integer, r_Integer ] /; StringLength @ str <= l + r + 5 := str;
 stringTrimMiddle[ str_String, l_Integer, r_Integer ] := StringTake[ str, l ] <> " ... " <> StringTake[ str, -r ];
@@ -95,6 +149,15 @@ makeFailureString[ failure: Failure[ tag_, as_Association ] ] := Enclose[
 makeFailureString // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*containsWordsQ*)
+containsWordsQ // beginDefinition;
+containsWordsQ[ p_ ] := containsWordsQ[ #, p ] &;
+containsWordsQ[ m_String, p_List ] := containsWordsQ[ m, StringExpression @@ Riffle[ p, Except[ WordCharacter ]... ] ];
+containsWordsQ[ m_String, p_ ] := StringContainsQ[ m, WordBoundary~~p~~WordBoundary, IgnoreCase -> True ];
+containsWordsQ // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
 (* ::Section::Closed:: *)
 (*Files*)
 
@@ -106,7 +169,7 @@ readString // beginDefinition;
 readString[ file_ ] := Quiet[ readString[ file, ReadByteArray @ file ], $CharacterEncoding::utf8 ];
 
 readString[ file_, bytes_? ByteArrayQ ] := readString[ file, ByteArrayToString @ bytes ];
-readString[ file_, string_? StringQ   ] := fixLineEndings @ string;
+readString[ file_, string_? StringQ   ] := replaceSpecialCharacters @ fixLineEndings @ string;
 readString[ file_, failure_Failure    ] := failure;
 
 readString[ file_, $Failed ] :=
@@ -118,6 +181,18 @@ readString[ file_, $Failed ] :=
     ];
 
 readString // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*replaceSpecialCharacters*)
+replaceSpecialCharacters // beginDefinition;
+
+replaceSpecialCharacters[ string_String? StringQ ] := StringReplace[
+    string,
+    special: ("\\[" ~~ LetterCharacter.. ~~ "]") :> ToExpression[ "\""<>special<>"\"" ]
+];
+
+replaceSpecialCharacters // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsubsection::Closed:: *)
@@ -142,87 +217,6 @@ fastFileHash // beginDefinition;
 fastFileHash[ file_ ] := fastFileHash[ file, ReadByteArray @ file ];
 fastFileHash[ file_, bytes_ByteArray ] := Hash @ bytes;
 fastFileHash // endDefinition;
-
-(* ::**************************************************************************************************************:: *)
-(* ::Section::Closed:: *)
-(*Graphics*)
-$$graphics = HoldPattern @ Alternatives[
-    _System`AstroGraphics,
-    _GeoGraphics,
-    _Graphics,
-    _Graphics3D,
-    _Image,
-    _Image3D,
-    _Legended
-];
-
-$$definitelyNotGraphics = HoldPattern @ Alternatives[
-    _Association,
-    _CloudObject,
-    _File,
-    _List,
-    _String,
-    _URL,
-    Null,
-    True|False
-];
-
-(* ::**************************************************************************************************************:: *)
-(* ::Subsection::Closed:: *)
-(*graphicsQ*)
-graphicsQ[ $$graphics              ] := True;
-graphicsQ[ $$definitelyNotGraphics ] := False;
-graphicsQ[ g_                      ] := MatchQ[ Quiet @ Show @ Unevaluated @ g, $$graphics ];
-graphicsQ[ ___                     ] := False;
-
-(* ::**************************************************************************************************************:: *)
-(* ::Subsection::Closed:: *)
-(*validGraphicsQ*)
-validGraphicsQ[ g_? graphicsQ ] := getPinkBoxErrors @ Unevaluated @ g === { };
-validGraphicsQ[ ___ ] := False;
-
-(* ::**************************************************************************************************************:: *)
-(* ::Subsection::Closed:: *)
-(*getPinkBoxErrors*)
-getPinkBoxErrors // beginDefinition;
-(* TODO: hook this up to evaluator outputs and CellToString to give feedback about pink boxes *)
-
-getPinkBoxErrors[ { } ] :=
-    { };
-
-getPinkBoxErrors[ cells: _CellObject | { __CellObject } ] :=
-    getPinkBoxErrors @ NotebookRead @ cells;
-
-getPinkBoxErrors[ cells: _Cell | { __Cell } ] :=
-    Module[ { nbo },
-        UsingFrontEnd @ WithCleanup[
-            nbo = NotebookPut[ Notebook @ Flatten @ { cells }, Visible -> False ],
-            SelectionMove[ nbo, All, Notebook ];
-            MathLink`CallFrontEnd @ FrontEnd`GetErrorsInSelectionPacket @ nbo,
-            NotebookClose @ nbo
-        ]
-    ];
-
-getPinkBoxErrors[ data: _TextData | _BoxData | { __BoxData } ] :=
-    getPinkBoxErrors @ Cell @ data;
-
-getPinkBoxErrors[ exprs_List ] :=
-    getPinkBoxErrors[ Cell @* BoxData /@ MakeBoxes /@ Unevaluated @ exprs ];
-
-getPinkBoxErrors[ expr_ ] :=
-    getPinkBoxErrors @ { Cell @ BoxData @ MakeBoxes @ expr };
-
-getPinkBoxErrors // endDefinition;
-
-
-(* ::**************************************************************************************************************:: *)
-(* ::Subsection::Closed:: *)
-(*image2DQ*)
-(* Matches against the head in addition to checking ImageQ to avoid passing Image3D when a 2D image is expected: *)
-image2DQ // beginDefinition;
-image2DQ[ _Image? ImageQ ] := True;
-image2DQ[ _              ] := False;
-image2DQ // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
 (* ::Section::Closed:: *)
@@ -274,20 +268,20 @@ importDataURI[ URL[ uri_String ], fmt_ ] :=
     importDataURI[ uri, fmt ];
 
 importDataURI[ uri_String, fmt0_ ] := Enclose[
-    Module[ { info, bytes, fmt, fmts, result, $failed },
+    Module[ { info, bytes, fmt, formats, result, $failed },
 
         info  = ConfirmBy[ uriData @ uri, AssociationQ, "URIData" ];
         bytes = ConfirmBy[ info[ "Data" ], ByteArrayQ, "Data" ];
         fmt   = If[ StringQ @ fmt0, fmt0, Nothing ];
 
-        fmts = ConfirmMatch[
+        formats = ConfirmMatch[
             DeleteDuplicates @ Flatten @ { fmt, info[ "Formats" ], Automatic },
             { (Automatic|_String).. },
             "Formats"
         ];
 
         result = FirstCase[
-            fmts,
+            formats,
             f_ :> With[ { res = ImportByteArray[ bytes, f ] },
                 res /; MatchQ[ res, Except[ _ImportByteArray | _? FailureQ ] ]
             ],
@@ -335,17 +329,17 @@ uriData // endDefinition;
 (*exportDataURI*)
 exportDataURI // beginDefinition;
 
-exportDataURI[ data_ ] :=
+exportDataURI[ data_, opts: OptionsPattern[ ] ] :=
     With[ { mime = guessExpressionMimeType @ data },
-        exportDataURI[ data, mimeTypeToFormat @ mime, mime ]
+        exportDataURI[ data, mimeTypeToFormat @ mime, mime, opts ]
     ];
 
-exportDataURI[ data_, fmt_String ] :=
-    exportDataURI[ data, fmt, formatToMIMEType @ fmt ];
+exportDataURI[ data_, fmt_String, opts: OptionsPattern[ ] ] :=
+    exportDataURI[ data, fmt, formatToMIMEType @ fmt, opts ];
 
-exportDataURI[ data_, fmt_String, mime_String ] := Enclose[
+exportDataURI[ data_, fmt_String, mime_String, opts: OptionsPattern[ ] ] := Enclose[
     Module[ { base64 },
-        base64 = ConfirmBy[ ExportString[ data, { "Base64", fmt } ], StringQ, "Base64" ];
+        base64 = ConfirmBy[ usingFrontEnd @ ExportString[ data, { "Base64", fmt }, opts ], StringQ, "Base64" ];
         "data:" <> mime <> ";base64," <> StringDelete[ base64, "\n" ]
     ],
     throwInternalFailure
@@ -366,8 +360,118 @@ guessExpressionMimeType // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
 (* ::Section::Closed:: *)
+(*Misc*)
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*contextBlock*)
+contextBlock // beginDefinition;
+contextBlock // Attributes = { HoldFirst };
+contextBlock[ eval_ ] := Block[ { $Context = "Global`", $ContextPath = { "Global`", "System`" } }, eval ];
+contextBlock // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*tinyHash*)
+tinyHash // beginDefinition;
+tinyHash[ e_ ] := tinyHash[ Unevaluated @ e, $tinyHashLength ];
+tinyHash[ e_, n_ ] := StringTake[ IntegerString[ Hash @ Unevaluated @ e, 36 ], -n ];
+tinyHash // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Section::Closed:: *)
+(*$ChatTimingData*)
+$ChatTimingData := chatTimingData[ ];
+
+$ChatTimingData /: Unset @ $ChatTimingData := ($timingLog = Internal`Bag[ ]; Null);
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*chatTimingData*)
+chatTimingData // beginDefinition;
+chatTimingData[ ] := SortBy[ Internal`BagPart[ $timingLog, All ], Lookup[ "AbsoluteTime" ] ]; (* TODO: format this data *)
+chatTimingData // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Section::Closed:: *)
+(*LogChatTiming*)
+LogChatTiming // beginDefinition;
+LogChatTiming // Attributes = { HoldFirst, SequenceHold };
+
+LogChatTiming[ tag_String ] := Function[ eval, LogChatTiming[ eval, tag ], HoldAllComplete ];
+LogChatTiming[ sym_Symbol ] := LogChatTiming @ Evaluate @ Capitalize @ SymbolName @ sym;
+LogChatTiming[ tags_List ] := LogChatTiming @ Evaluate @ StringRiffle[ tags, ":" ];
+LogChatTiming[ eval: (h_Symbol)[ ___ ] ] := LogChatTiming[ eval, Capitalize @ SymbolName @ h ];
+LogChatTiming[ eval_ ] := LogChatTiming[ eval, "None" ];
+
+LogChatTiming[ eval_, tag_String ] := (
+    If[ ! NumberQ @ $chatStartTime, $chatStartTime = AbsoluteTime[ ] ];
+    If[ ! StringQ @ $chatEvaluationID, $chatEvaluationID = CreateUUID[ ] ];
+    If[ MatchQ[ $timings, _Internal`Bag ],
+        logChatTiming[ eval, tag ],
+        Block[ { $timings = Internal`Bag[ ] },
+            logChatTiming[ eval, tag ]
+        ]
+    ]
+);
+
+LogChatTiming // endExportedDefinition;
+
+$timings   = Internal`Bag[ ];
+$timingLog = Internal`Bag[ ];
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*logChatTiming*)
+logChatTiming // beginDefinition;
+logChatTiming // Attributes = { HoldFirst, SequenceHold };
+
+logChatTiming[ eval_, tag_String ] :=
+    Module[ { now, absNow, result, fullTime, innerTimings, usedTime },
+
+        now    = chatTime[ ];
+        absNow = AbsoluteTime[ ];
+
+        Block[ { $timings = Internal`Bag[ ] },
+            fullTime = First @ AbsoluteTiming[ result = eval ];
+            innerTimings = Internal`BagPart[ $timings, All ];
+        ];
+
+        usedTime = fullTime - Total @ innerTimings;
+        Internal`StuffBag[ $timings, fullTime ];
+
+        Internal`StuffBag[
+            $timingLog,
+            <|
+                "ChatEvaluationCell" -> $ChatEvaluationCell,
+                "Tag"                -> tag,
+                "UsedTiming"         -> usedTime,
+                "FullTiming"         -> fullTime,
+                "ChatTime"           -> now,
+                "AbsoluteTime"       -> absNow,
+                "UUID"               -> $chatEvaluationID
+            |>
+        ];
+
+        result;
+        result
+    ];
+
+logChatTiming // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*chatTime*)
+chatTime // beginDefinition;
+chatTime[ ] := chatTime @ $chatStartTime;
+chatTime[ start_Real ] := AbsoluteTime[ ] - start;
+chatTime[ _ ] := Missing[ "NotAvailable" ];
+chatTime // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Section::Closed:: *)
 (*Package Footer*)
-If[ Wolfram`ChatbookInternal`$BuildingMX,
+addToMXInitialization[
     Scan[ fileFormatQ, $fileFormats ];
 ];
 

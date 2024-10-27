@@ -10,9 +10,7 @@ BeginPackage[ "Wolfram`Chatbook`PersonaManager`" ];
 Begin[ "`Private`" ];
 
 Needs[ "Wolfram`Chatbook`"                   ];
-Needs[ "Wolfram`Chatbook`CloudToolbar`"      ];
 Needs[ "Wolfram`Chatbook`Common`"            ];
-Needs[ "Wolfram`Chatbook`Dialogs`"           ];
 Needs[ "Wolfram`Chatbook`Personas`"          ];
 Needs[ "Wolfram`Chatbook`ResourceInstaller`" ];
 Needs[ "Wolfram`Chatbook`UI`"                ];
@@ -29,7 +27,7 @@ CreatePersonaManagerDialog // beginDefinition;
 
 CreatePersonaManagerDialog[ args___ ] := createDialog[
     CreatePersonaManagerPanel @ args,
-    WindowTitle -> "Add & Manage Personas"
+    WindowTitle -> tr[ "PersonaManagerTitle" ]
 ];
 
 CreatePersonaManagerDialog // endDefinition;
@@ -39,7 +37,7 @@ CreatePersonaManagerDialog // endDefinition;
 (*CreatePersonaManagerPanel*)
 CreatePersonaManagerPanel // beginDefinition;
 
-CreatePersonaManagerPanel[ ] := DynamicModule[{favorites, delimColor},
+CreatePersonaManagerPanel[ ] := DynamicModule[{favorites, delimiterColor},
     favorites = Replace[
         CurrentChatSettings[ $FrontEnd, "PersonaFavorites" ],
         Except[ { ___String } ] :> $corePersonaNames
@@ -48,16 +46,16 @@ CreatePersonaManagerPanel[ ] := DynamicModule[{favorites, delimColor},
     Framed[
         Grid[
             {
-                If[ TrueQ @ $inDialog, dialogHeader[ "Add & Manage Personas" ], Nothing ],
+                If[ TrueQ @ $inDialog, dialogHeader @ tr[ "PersonaManagerTitle" ], Nothing ],
 
                 (* ----- Install Personas ----- *)
-                dialogSubHeader[ "Install Personas" ],
+                dialogSubHeader @ tr[ "PersonaManagerInstallPersonas" ],
                 dialogBody[
                     Grid @ {
                         {
-                            "Install from",
+                            tr[ "PersonaManagerInstallFrom" ],
                             Button[
-                                grayDialogButtonLabel[ "Prompt Repository \[UpperRightArrow]" ],
+                                grayDialogButtonLabel @ tr[ "PersonaManagerInstallFromPromptRepo" ],
                                 If[ $CloudEvaluation, SetOptions[ EvaluationNotebook[ ], DockedCells -> Inherited ] ];
                                 ResourceInstallFromRepository[ "Prompt" ],
                                 Appearance       -> "Suppressed",
@@ -65,9 +63,17 @@ CreatePersonaManagerPanel[ ] := DynamicModule[{favorites, delimColor},
                                 Method           -> "Queued"
                             ],
                             Button[
-                                grayDialogButtonLabel[ "URL" ],
+                                grayDialogButtonLabel @ tr[ "URLButton" ],
                                 If[ $CloudEvaluation, SetOptions[ EvaluationNotebook[ ], DockedCells -> Inherited ] ];
                                 Block[ { PrintTemporary }, ResourceInstallFromURL[ "Prompt" ] ],
+                                Appearance       -> "Suppressed",
+                                BaselinePosition -> Baseline,
+                                Method           -> "Queued"
+                            ],
+                            Button[
+                                grayDialogButtonLabel @ tr[ "PersonaManagerInstallFromFile" ],
+                                If[ $CloudEvaluation, SetOptions[ EvaluationNotebook[ ], DockedCells -> Inherited ] ];
+                                Block[ { PrintTemporary }, ResourceInstallFromFile[ "Prompt" ] ],
                                 Appearance       -> "Suppressed",
                                 BaselinePosition -> Baseline,
                                 Method           -> "Queued"
@@ -77,18 +83,28 @@ CreatePersonaManagerPanel[ ] := DynamicModule[{favorites, delimColor},
                 ],
 
                 (* ----- Configure and Enable Personas ----- *)
-                dialogSubHeader[ "Manage and Enable Personas", { Automatic, { 5, Automatic } } ],
+                dialogSubHeader[ tr[ "PersonaManagerManagePersonas" ], { Automatic, { 5, Automatic } } ],
                 {
                     If[ $inDialog, Pane[#, AppearanceElements -> None, ImageSize -> {Full, UpTo[300]}, Scrollbars -> {False, Automatic}], # ]& @
                     Dynamic[
+                        $CachedPersonaData;
                         Grid[
                             Prepend[
                                 KeyValueMap[
                                     formatPersonaData[#1, #2]&,
                                     Join[
-                                        KeyTake[$CachedPersonaData, favorites],
-                                        KeySort[$CachedPersonaData]]],
-                                {"", "In Menu", "", "Name", ""(*FITME*), (*"Description",*) "Version", ""}],
+                                        KeyTake[GetCachedPersonaData[ "IncludeHidden" -> False ], favorites],
+                                        KeySort[GetCachedPersonaData[ "IncludeHidden" -> False ]]]],
+                                {
+                                    "",
+                                    tr[ "PersonaManagerInMenu" ],
+                                    "",
+                                    tr[ "PersonaManagerName" ],
+                                    "",
+                                    tr[ "PersonaManagerVersion" ],
+                                    ""
+                                }
+                            ],
                             Alignment -> {{Center, Center, {Left}}, Center},
                             Background -> {{}, {RGBColor["#e5e5e5"], {White}}},
                             BaseStyle -> "DialogBody",
@@ -98,11 +114,11 @@ CreatePersonaManagerPanel[ ] := DynamicModule[{favorites, delimColor},
                                     {{True}},
                                     {
                                         2 -> False,
-                                        Length[favorites] + 2 -> Directive[delimColor, AbsoluteThickness[5]]
+                                        Length[favorites] + 2 -> Directive[delimiterColor, AbsoluteThickness[5]]
                                     }
                                 }
                             },
-                            FrameStyle -> Dynamic[delimColor],
+                            FrameStyle -> Dynamic[delimiterColor],
                             ItemSize -> {{Automatic, Automatic, Automatic, Automatic, Fit, {Automatic}}, {}},
                             Spacings -> {
                                 {{{1}}, {2 -> 1, 4 -> 0.5}},
@@ -118,7 +134,7 @@ CreatePersonaManagerPanel[ ] := DynamicModule[{favorites, delimColor},
                     {
                         Item[
                             Button[(* give Default properties using specific FEExpression *)
-                                redDialogButtonLabel[ "OK" ],
+                                redDialogButtonLabel @ tr[ "OKButton" ],
                                 DialogReturn @ channelCleanup[ ],
                                 Appearance -> FEPrivate`FrontEndResource["FEExpressions", "DefaultSuppressMouseDownNinePatchAppearance"],
                                 ImageMargins -> {{0, 31}, {14, 14}},
@@ -138,14 +154,14 @@ CreatePersonaManagerPanel[ ] := DynamicModule[{favorites, delimColor},
                     {
                         2 -> True,
                         4 -> True,
-                        -2 -> Directive[delimColor, AbsoluteThickness[5]]
+                        -2 -> Directive[AbsoluteThickness[5]]
                     },
                     {
                         3 -> True
                     }
                 ]
             },
-            FrameStyle -> Dynamic[delimColor],
+            FrameStyle -> Dynamic[delimiterColor],
             Spacings -> {0, 0}
         ],
         ContentPadding -> 0,
@@ -153,7 +169,7 @@ CreatePersonaManagerPanel[ ] := DynamicModule[{favorites, delimColor},
         FrameStyle -> None,
         ImageSize -> { If[ TrueQ @ $inDialog, 501, Automatic ], All}],
     Initialization :> (
-        delimColor = CurrentValue[{StyleDefinitions, "DialogDelimiter", CellFrameColor}];
+        delimiterColor = CurrentValue[{StyleDefinitions, "DialogDelimiter", CellFrameColor}];
         GetPersonaData[]; (* sets $CachedPersonaData *)
         (* make sure there are no unexpected extra personas *)
         Enclose[
@@ -216,19 +232,40 @@ formatPersonaData[ name_String, as_Association, link_, desc_, version_, icon_, o
 
 formatPersonaData // endDefinition;
 
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*formatName*)
 formatName // beginDefinition;
-formatName[ name_String ] := StringJoin[ Riffle[ DeleteCases[ StringTrim @ StringSplit[ name, RegularExpression[ "([A-Z])([a-z]+)" ] -> "$1$2 " ], "" ], " " ] ]
-formatName[ origin_String, name_String, link_Missing ] :=  formatName[ name ]
-formatName[ "PacletRepository", name_String, link_ ] := formatName[ name ]
-formatName[ origin_String, name_String, link_ ] :=
+
+formatName[ name_String ] := StringRiffle @ DeleteCases[
+    StringTrim @ StringSplit[ name, RegularExpression[ "([A-Z])([a-z]+)" ] -> "$1$2 " ],
+    ""
+];
+
+formatName[ name: Except[ $$unspecified ] ] :=
+    name;
+
+formatName[ origin_String, name: Except[ $$unspecified ], link_Missing ] :=
+    formatName @ name;
+
+formatName[ "PacletRepository", name: Except[ $$unspecified ], link_ ] :=
+    formatName @ name;
+
+formatName[ origin_String, name: Except[ $$unspecified ], link_ ] :=
     Hyperlink[
         Mouseover[
-            Grid[{{formatName[ name ], chatbookIcon["PeelOff", False]}}],
-            Grid[{{formatName[ name ], chatbookIcon["PeelOff-hover", False]}}]],
+            Grid @ { { formatName @ name, chatbookIcon[ "PeelOff", False ] } },
+            Grid @ { { formatName @ name, chatbookIcon[ "PeelOff-hover", False ] } }
+        ],
         link,
-        BaseStyle -> {LineBreakWithin -> False}];
+        BaseStyle -> { LineBreakWithin -> False }
+    ];
+
 formatName // endDefinition;
 
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*formatDescription*)
 formatDescription // beginDefinition;
 formatDescription[ _Missing ] := Style["\[LongDash]", FontColor -> GrayLevel[0.808]];
 formatDescription[ desc_String ] :=
@@ -239,17 +276,26 @@ formatDescription[ desc_String ] :=
     ]&[<|"nChars" -> 30|>];
 formatDescription // endDefinition;
 
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*formatVersion*)
 formatVersion // beginDefinition;
 formatVersion[ _Missing ] := Style["\[LongDash]", FontColor -> GrayLevel[0.808]];
 formatVersion[ version: _String|None ] := version;
 formatVersion // endDefinition;
 
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*formatIcon*)
 formatIcon // beginDefinition;
 formatIcon[ _Missing ] := "";
 formatIcon[ KeyValuePattern[ "Default" -> icon_ ] ] := formatIcon @ icon;
 formatIcon[ icon_ ] := Pane[ icon, ImageSize -> { 20, 20 }, ImageSizeAction -> "ShrinkToFit" ];
 formatIcon // endDefinition;
 
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*formatPacletLink*)
 formatPacletLink // beginDefinition;
 formatPacletLink[ origin_String, url_, pacletName_ ] :=
     Switch[origin,
@@ -259,18 +305,21 @@ formatPacletLink[ origin_String, url_, pacletName_ ] :=
                     formatIcon @ Mouseover[chatbookIcon["PacletRepo", False], chatbookIcon["PacletRepo-hover", False]],
                     $chatbookDocumentationURL,
                     ImageMargins -> {{13, 0}, {0, 0}}],
-                "Persona installed from the Wolfram/Chatbook paclet. Visit page \[RightGuillemet]"],
+                tr[ "PersonaManagerOriginChatbookTooltip" ]],
         "PacletRepository",
             Tooltip[
                 Hyperlink[
                     formatIcon @ Mouseover[chatbookIcon["PacletRepo", False], chatbookIcon["PacletRepo-hover", False]],
                     url,
                     ImageMargins -> {{13, 0}, {0, 0}}],
-                StringTemplate["Persona installed from the `name` paclet. Visit page \[RightGuillemet]."][<|"name" -> pacletName|>]],
+                trStringTemplate[ "PersonaManagerOriginRepositoryTooltip" ][ <| "name" -> pacletName |> ]],
         _,
             ""];
 formatPacletLink // endDefinition;
 
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*addRemovePersonaListingCheckbox*)
 addRemovePersonaListingCheckbox // beginDefinition;
 
 addRemovePersonaListingCheckbox[ name_String ] :=
@@ -288,6 +337,9 @@ addRemovePersonaListingCheckbox[ name_String ] :=
 
 addRemovePersonaListingCheckbox // endDefinition;
 
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*uninstallButton*)
 uninstallButton // beginDefinition;
 uninstallButton[ name_String, installedQ_, pacletName_String ] :=
     Button[
@@ -298,7 +350,7 @@ uninstallButton[ name_String, installedQ_, pacletName_String ] :=
                 "Disabled" ->
                     Tooltip[
                         formatIcon @ chatbookIcon["Delete-disabled", False],
-                        StringTemplate["This persona cannot be uninstalled because it is provided by the `1` paclet."][pacletName]]},
+                        trStringTemplate[ "PersonaManagerPersonaUninstallTooltip" ][ pacletName ]]},
             Dynamic[Which[!installedQ, "Disabled", CurrentValue["MouseOver"], "Hover", True, "Default"]],
             ImageSize -> Automatic],
         Block[ { PrintTemporary },
@@ -315,8 +367,8 @@ uninstallButton // endDefinition;
 (* ::**************************************************************************************************************:: *)
 (* ::Section::Closed:: *)
 (*Package Footer*)
-If[ Wolfram`ChatbookInternal`$BuildingMX,
-    Null;
+addToMXInitialization[
+    Null
 ];
 
 (* :!CodeAnalysis::EndBlock:: *)

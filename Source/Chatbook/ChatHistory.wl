@@ -1,26 +1,13 @@
 (* ::Section::Closed:: *)
 (*Package Header*)
 BeginPackage[ "Wolfram`Chatbook`ChatHistory`" ];
+Begin[ "`Private`" ];
 
 (* :!CodeAnalysis::BeginBlock:: *)
 
-HoldComplete[
-    `accentIncludedCells;
-    `chatExcludedQ;
-    `extraCellHeight;
-    `filterChatCells;
-    `getCellsInChatHistory;
-    `removeCellAccents;
-];
-
-Begin[ "`Private`" ];
-
-Needs[ "Wolfram`Chatbook`"              ];
-Needs[ "Wolfram`Chatbook`ChatMessages`" ];
-Needs[ "Wolfram`Chatbook`Common`"       ];
-Needs[ "Wolfram`Chatbook`FrontEnd`"     ];
-Needs[ "Wolfram`Chatbook`SendChat`"     ];
-Needs[ "Wolfram`Chatbook`Settings`"     ];
+Needs[ "Wolfram`Chatbook`"         ];
+Needs[ "Wolfram`Chatbook`Actions`" ];
+Needs[ "Wolfram`Chatbook`Common`"  ];
 
 (* ::**************************************************************************************************************:: *)
 (* ::Section::Closed:: *)
@@ -43,6 +30,8 @@ $$historyProperty           = All | $$validChatHistoryProperty | { $$validChatHi
 (* ::**************************************************************************************************************:: *)
 (* ::Section::Closed:: *)
 (*GetChatHistory*)
+GetChatHistory // beginDefinition;
+
 GeneralUtilities`SetUsage[ GetChatHistory, "\
 GetChatHistory[cell$] gives the list of cells that would be included in the chat history for the \
 CellObject specified by cell$.
@@ -66,18 +55,17 @@ GetChatHistory[ cell_CellObject, "CellObjects" ] :=
     catchMine @ getCellsInChatHistory @ cell;
 
 GetChatHistory[ cell_CellObject, property: $$historyProperty ] := catchMine @ Enclose[
-    Module[ { cells, data, as },
+    withChatState @ Module[ { cells, data, as },
         { cells, data } = Reap[ getCellsInChatHistory @ cell, $chatHistoryTag ];
         ConfirmMatch[ cells, { ___CellObject }, "CellObjects" ];
         as = ConfirmBy[ <| data, "CellObjects" -> cells |>, AssociationQ, "Data" ];
         If[ KeyExistsQ[ as, "Settings" ], as[ "Settings" ] = resolveAutoSettings @ as[ "Settings" ] ];
         ConfirmMatch[ selectProperties[ as, property ], Except[ _selectProperties ], "SelectedProperties" ]
     ],
-    throwInternalFailure[ GetChatHistory[ cell, property ], ## ] &
+    throwInternalFailure
 ];
 
-GetChatHistory[ args___ ] :=
-    catchMine @ throwFailure[ "InvalidArguments", GetChatHistory, HoldForm @ GetChatHistory @ args ];
+GetChatHistory // endExportedDefinition;
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsection::Closed:: *)
@@ -97,7 +85,7 @@ selectProperties // endDefinition;
 (*getCellExpressions*)
 getCellExpressions // beginDefinition;
 getCellExpressions[ KeyValuePattern[ "CellObjects" -> cells_ ] ] := getCellExpressions @ cells;
-getCellExpressions[ cells: { ___CellObject } ] := NotebookRead @ cells;
+getCellExpressions[ cells: { ___CellObject } ] := notebookRead @ cells;
 getCellExpressions // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
@@ -189,6 +177,8 @@ chatExcludedQ[ KeyValuePattern[ "ChatNotebookSettings" -> settings_ ] ] := chatE
 chatExcludedQ[ KeyValuePattern[ "ExcludeFromChat" -> exclude_ ] ] := TrueQ @ exclude;
 chatExcludedQ[ KeyValuePattern[ { } ] ] := False;
 chatExcludedQ[ Inherited ] := False;
+chatExcludedQ[ _? FailureQ ] := False;
+chatExcludedQ[ _FrontEnd`AbsoluteCurrentValue ] := False;
 
 chatExcludedQ // endDefinition;
 
@@ -281,8 +271,8 @@ extraCellHeight // endDefinition;
 (* ::**************************************************************************************************************:: *)
 (* ::Section::Closed:: *)
 (*Package Footer*)
-If[ Wolfram`ChatbookInternal`$BuildingMX,
-    Null;
+addToMXInitialization[
+    Null
 ];
 
 (* :!CodeAnalysis::EndBlock:: *)

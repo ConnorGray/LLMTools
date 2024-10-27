@@ -398,7 +398,15 @@ Notebook[
               TemplateBox[{}, "ChatInputIcon"],
               BaselinePosition -> Center -> Scaled[0.55]
              ],
-             StyleBox["Chat Input", "CellInsertionMenu"],
+             StyleBox[
+              DynamicBox[
+               FEPrivate`FrontEndResource[
+                "ChatbookStrings",
+                "StylesheetInsertionMenuChatInput"
+               ]
+              ],
+              "CellInsertionMenu"
+             ],
              StyleBox[
               StyleBox["'", "CellInsertionMenuShortcut"],
               "CellInsertionMenuShortcut"
@@ -471,7 +479,15 @@ Notebook[
               TemplateBox[{}, "SideChatIcon"],
               BaselinePosition -> Center -> Scaled[0.55]
              ],
-             StyleBox["Side Chat", "CellInsertionMenu"],
+             StyleBox[
+              DynamicBox[
+               FEPrivate`FrontEndResource[
+                "ChatbookStrings",
+                "StylesheetInsertionMenuSideChat"
+               ]
+              ],
+              "CellInsertionMenu"
+             ],
              StyleBox[
               StyleBox["''", "CellInsertionMenuShortcut"],
               "CellInsertionMenuShortcut"
@@ -746,6 +762,11 @@ Notebook[
      Magnification -> 1,
      FontSize -> 0.1
     ],
+   PrivateCellOptions -> {
+    "AccentStyle" -> {
+     CellTrayWidgets -> <|"ChatIncluded" -> <|"Condition" -> True|>|>
+    }
+   },
    TaggingRules -> <|"ChatNotebookSettings" -> <||>|>,
    CellTrayWidgets -> <|
     "GearMenu" -> <|"Condition" -> False|>,
@@ -772,524 +793,54 @@ Notebook[
     |>
    |>,
    ComponentwiseContextMenu -> <|
-    "CellBracket" -> {
-     MenuItem[
-      "Ask AI Assistant",
-      KernelExecute[
-       With[ { Wolfram`ChatNB`nbo = InputNotebook[] },
-        {Wolfram`ChatNB`cells = SelectedCells[Wolfram`ChatNB`nbo]},
-        Quiet[Needs["Wolfram`Chatbook`" -> None]];
-        Symbol["Wolfram`Chatbook`ChatbookAction"][
-         "Ask",
-         Wolfram`ChatNB`nbo,
-         Wolfram`ChatNB`cells
-        ]
+    "CellBracket" ->
+     Dynamic[
+      FEPrivate`Join[{MenuItem[#1, KernelExecute[With[{Wolfram`ChatNB`nbo = InputNotebook[]}, {Wolfram`ChatNB`cells = SelectedCells[Wolfram`ChatNB`nbo]}, Quiet[Needs["Wolfram`Chatbook`" -> None]]; Symbol["Wolfram`Chatbook`ChatbookAction"]["Ask", Wolfram`ChatNB`nbo, Wolfram`ChatNB`cells]]], MenuEvaluator -> Automatic, Method -> "Queued"], MenuItem[#2, KernelExecute[With[{Wolfram`ChatNB`nbo = InputNotebook[]}, {Wolfram`ChatNB`cells = SelectedCells[Wolfram`ChatNB`nbo]}, Quiet[Needs["Wolfram`Chatbook`" -> None]]; Symbol["Wolfram`Chatbook`ChatbookAction"]["ExclusionToggle", Wolfram`ChatNB`nbo, Wolfram`ChatNB`cells]]], MenuEvaluator -> Automatic, Method -> "Queued"], Delimiter}, FEPrivate`FrontEndResource["ContextMenus", "CellBracket"]] &[
+       FEPrivate`FrontEndResource[
+        "ChatbookStrings",
+        "StylesheetContextMenuAskAI"
+       ],
+       FEPrivate`FrontEndResource[
+        "ChatbookStrings",
+        "StylesheetContextMenuIncludeExclude"
        ]
-      ],
-      MenuEvaluator -> Automatic,
-      Method -> "Queued"
+      ]
      ],
-     MenuItem[
-      "Include/Exclude From AI Chat",
-      KernelExecute[
-       With[ { Wolfram`ChatNB`nbo = InputNotebook[] },
-        {Wolfram`ChatNB`cells = SelectedCells[Wolfram`ChatNB`nbo]},
-        Quiet[Needs["Wolfram`Chatbook`" -> None]];
-        Symbol["Wolfram`Chatbook`ChatbookAction"][
-         "ExclusionToggle",
-         Wolfram`ChatNB`nbo,
-         Wolfram`ChatNB`cells
-        ]
+    "CellGroup" ->
+     Dynamic[
+      FEPrivate`Join[{MenuItem[#1, KernelExecute[With[{Wolfram`ChatNB`nbo = InputNotebook[]}, {Wolfram`ChatNB`cells = SelectedCells[Wolfram`ChatNB`nbo]}, Quiet[Needs["Wolfram`Chatbook`" -> None]]; Symbol["Wolfram`Chatbook`ChatbookAction"]["ExclusionToggle", Wolfram`ChatNB`nbo, Wolfram`ChatNB`cells]]], MenuEvaluator -> Automatic, Method -> "Queued"], Delimiter}, FEPrivate`FrontEndResource["ContextMenus", "CellGroup"]] &[
+       FEPrivate`FrontEndResource[
+        "ChatbookStrings",
+        "StylesheetContextMenuIncludeExclude"
        ]
-      ],
-      MenuEvaluator -> Automatic,
-      Method -> "Queued"
+      ]
      ],
-     Delimiter,
-     MenuItem["Cu&t", "Cut"],
-     MenuItem["&Copy", "Copy"],
-     MenuItem["&Paste", FrontEnd`Paste[After]],
-     Menu[
-      "Cop&y As",
-      {
-       MenuItem["Plain &Text", FrontEnd`CopySpecial["PlainText"]],
-       MenuItem["&Input Text", FrontEnd`CopySpecial["InputText"]],
-       MenuItem[
-        "&LaTeX",
-        KernelExecute[ToExpression["FrontEnd`CopyAsTeX[]"]],
-        MenuEvaluator -> "System"
-       ],
-       MenuItem[
-        "M&athML",
-        KernelExecute[ToExpression["FrontEnd`CopyAsMathML[]"]],
-        MenuEvaluator -> "System"
-       ],
-       Delimiter,
-       MenuItem[
-        "Cell &Object",
-        FrontEnd`CopySpecial["CellObject"]
-       ],
-       MenuItem[
-        "&Cell Expression",
-        FrontEnd`CopySpecial["CellExpression"]
-       ],
-       MenuItem[
-        "&Notebook Expression",
-        FrontEnd`CopySpecial["NotebookExpression"]
+    "CellRange" ->
+     Dynamic[
+      FEPrivate`Join[{MenuItem[#1, KernelExecute[With[{Wolfram`ChatNB`nbo = InputNotebook[]}, {Wolfram`ChatNB`cells = SelectedCells[Wolfram`ChatNB`nbo]}, Quiet[Needs["Wolfram`Chatbook`" -> None]]; Symbol["Wolfram`Chatbook`ChatbookAction"]["ExclusionToggle", Wolfram`ChatNB`nbo, Wolfram`ChatNB`cells]]], MenuEvaluator -> Automatic, Method -> "Queued"], Delimiter}, FEPrivate`FrontEndResource["ContextMenus", "CellRange"]] &[
+       FEPrivate`FrontEndResource[
+        "ChatbookStrings",
+        "StylesheetContextMenuIncludeExclude"
        ]
-      }
-     ],
-     Delimiter,
-     MenuItem["&Evaluate Cell", "EvaluateCells"],
-     MenuItem[
-      "&Remove from Evaluation Queue",
-      "RemoveFromEvaluationQueue"
-     ],
-     MenuItem[
-      "Analyze Cell",
-      KernelExecute[
-       Needs["CodeInspector`"];
-       CodeInspector`AttachAnalysis[
-        SelectedCells[InputNotebook[]]
-       ]
-      ],
-      MenuEvaluator -> Automatic,
-      Method -> "Queued"
-     ],
-     Delimiter,
-     Menu[
-      "Con&vert To",
-      {
-       MenuItem["&InputForm", "SelectionConvert" -> InputForm],
-       MenuItem[
-        "&Raw InputForm",
-        "SelectionConvert" -> RawInputForm
-       ],
-       MenuItem["&OutputForm", "SelectionConvert" -> OutputForm],
-       MenuItem[
-        "First Convert to BoxForm",
-        "MenuListConvertFormatTypes",
-        MenuAnchor -> True
-       ],
-       Delimiter,
-       MenuItem["&Bitmap", "SelectionConvert" -> "Bitmap"]
-      }
-     ],
-     ToggleMenuItem[
-      "&Initialization Cell",
-      InitializationCell -> Toggle
-     ],
-     MenuItem["Add/Remove Cell Tags...", "CellTagsEditDialog"],
-     Delimiter,
-     Menu[
-      "&Style",
-      {
-       LinkedItems[
-        {
-         MenuItem[
-          "Start Cell Style Names",
-          "MenuListStyles",
-          MenuAnchor -> True
-         ]
-        }
-       ],
-       Delimiter,
-       MenuItem["&Other...", "StyleOther"]
-      }
-     ],
-     Menu[
-      "Back&ground Color",
-      {
-       MenuItem["Palette...", "BackgroundDialog"],
-       Delimiter,
-       LinkedItems[
-        {
-         MenuItem["None", Background -> None],
-         Delimiter,
-         MenuItem["Black", Background -> GrayLevel[0]],
-         MenuItem["Gray", Background -> GrayLevel[0.5]],
-         MenuItem["Light Gray", Background -> GrayLevel[0.85]],
-         MenuItem["White", Background -> GrayLevel[1]],
-         Delimiter,
-         MenuItem[
-          "Light Blue",
-          Background -> RGBColor[0.87, 0.94, 1]
-         ],
-         MenuItem[
-          "Light Brown",
-          Background -> RGBColor[0.94, 0.91, 0.88]
-         ],
-         MenuItem["Light Cyan", Background -> RGBColor[0.9, 1, 1]],
-         MenuItem[
-          "Light Green",
-          Background -> RGBColor[0.88, 1, 0.88]
-         ],
-         MenuItem[
-          "Light Magenta",
-          Background -> RGBColor[1, 0.9, 1]
-         ],
-         MenuItem[
-          "Light Orange",
-          Background -> RGBColor[1, 0.9, 0.8]
-         ],
-         MenuItem[
-          "Light Pink",
-          Background -> RGBColor[1, 0.925, 0.925]
-         ],
-         MenuItem[
-          "Light Purple",
-          Background -> RGBColor[0.94, 0.88, 0.94]
-         ],
-         MenuItem[
-          "Light Red",
-          Background -> RGBColor[1, 0.85, 0.85]
-         ],
-         MenuItem[
-          "Light Yellow",
-          Background -> RGBColor[1, 1, 0.85]
-         ],
-         Delimiter,
-         MenuItem["Orange", Background -> RGBColor[1, 0.5, 0]],
-         MenuItem["Pink", Background -> RGBColor[1, 0.5, 0.5]],
-         MenuItem["Yellow", Background -> RGBColor[1, 1, 0]]
-        }
-       ]
-      }
-     ],
-     Menu[
-      "Si&ze",
-      {
-       MenuItem["&Larger", FontSize -> Larger],
-       MenuItem["&Smaller", FontSize -> Smaller],
-       Delimiter,
-       LinkedItems[
-        {
-         MenuItem["&9 Point", FontSize -> 9],
-         MenuItem["1&0 Point", FontSize -> 10],
-         MenuItem["&12 Point", FontSize -> 12],
-         MenuItem["1&4 Point", FontSize -> 14],
-         MenuItem["1&6 Point", FontSize -> 16],
-         MenuItem["1&8 Point", FontSize -> 18],
-         MenuItem["&24 Point", FontSize -> 24],
-         MenuItem["&36 Point", FontSize -> 36],
-         MenuItem["&72 Point", FontSize -> 72]
-        }
-       ]
-      }
-     ],
-     MenuItem["Clear &Formatting", "ClearCellOptions"],
-     Delimiter,
-     MenuItem["Save Se&lection As...", "SelectionSaveSpecial"],
-     MenuItem["Print Selection...", "PrintSelectionDialog"],
-     MenuItem["Spea&k Selection", "SelectionSpeak"],
-     Delimiter,
-     MenuItem[
-      "Properties...",
-      "OptionsDialog",
-      Scope -> Selection
+      ]
      ]
-    },
-    "CellGroup" -> {
-     MenuItem[
-      "Include/Exclude From AI Chat",
-      KernelExecute[
-       With[ { Wolfram`ChatNB`nbo = InputNotebook[] },
-        {Wolfram`ChatNB`cells = SelectedCells[Wolfram`ChatNB`nbo]},
-        Quiet[Needs["Wolfram`Chatbook`" -> None]];
-        Symbol["Wolfram`Chatbook`ChatbookAction"][
-         "ExclusionToggle",
-         Wolfram`ChatNB`nbo,
-         Wolfram`ChatNB`cells
-        ]
-       ]
-      ],
-      MenuEvaluator -> Automatic,
-      Method -> "Queued"
-     ],
-     Delimiter,
-     MenuItem["Cu&t", "Cut"],
-     MenuItem["&Copy", "Copy"],
-     MenuItem["&Paste", FrontEnd`Paste[After]],
-     Menu[
-      "Cop&y As",
-      {
-       MenuItem["Plain &Text", FrontEnd`CopySpecial["PlainText"]],
-       MenuItem[
-        "Cell &Object",
-        FrontEnd`CopySpecial["CellObject"]
-       ],
-       MenuItem[
-        "&Cell Expression",
-        FrontEnd`CopySpecial["CellExpression"]
-       ],
-       MenuItem[
-        "&Notebook Expression",
-        FrontEnd`CopySpecial["NotebookExpression"]
-       ]
-      }
-     ],
-     Delimiter,
-     MenuItem["&Merge Cells", "CellMerge"],
-     MenuItem["&Ungroup Cells", "CellUngroup"],
-     Delimiter,
-     MenuItem["Open&/Close Group", "OpenCloseGroup"],
-     MenuItem["&Open All Subgroups", "SelectionOpenAllGroups"],
-     MenuItem["C&lose All Subgroups", "SelectionCloseAllGroups"],
-     Delimiter,
-     MenuItem["&Evaluate Cells", "EvaluateCells"],
-     MenuItem[
-      "&Remove from Evaluation Queue",
-      "RemoveFromEvaluationQueue"
-     ],
-     MenuItem[
-      "Analyze Cells",
-      KernelExecute[
-       Needs["CodeInspector`"];
-       CodeInspector`AttachAnalysis[
-        SelectedCells[InputNotebook[]]
-       ]
-      ],
-      MenuEvaluator -> Automatic,
-      Method -> "Queued"
-     ],
-     Delimiter,
-     MenuItem["Clear &Formatting", "ClearCellOptions"],
-     Menu[
-      "&Style",
-      {
-       LinkedItems[
-        {
-         MenuItem[
-          "Start Cell Style Names",
-          "MenuListStyles",
-          MenuAnchor -> True
-         ]
-        }
-       ],
-       Delimiter,
-       MenuItem["&Other...", "StyleOther"]
-      }
-     ]
-    },
-    "CellRange" -> {
-     MenuItem[
-      "Include/Exclude From AI Chat",
-      KernelExecute[
-       With[ { Wolfram`ChatNB`nbo = InputNotebook[] },
-        {Wolfram`ChatNB`cells = SelectedCells[Wolfram`ChatNB`nbo]},
-        Quiet[Needs["Wolfram`Chatbook`" -> None]];
-        Symbol["Wolfram`Chatbook`ChatbookAction"][
-         "ExclusionToggle",
-         Wolfram`ChatNB`nbo,
-         Wolfram`ChatNB`cells
-        ]
-       ]
-      ],
-      MenuEvaluator -> Automatic,
-      Method -> "Queued"
-     ],
-     Delimiter,
-     MenuItem["Cu&t", "Cut"],
-     MenuItem["&Copy", "Copy"],
-     MenuItem["&Paste", FrontEnd`Paste[After]],
-     Menu[
-      "Cop&y As",
-      {
-       MenuItem["Plain &Text", FrontEnd`CopySpecial["PlainText"]],
-       MenuItem[
-        "Cell &Object",
-        FrontEnd`CopySpecial["CellObject"]
-       ],
-       MenuItem[
-        "&Cell Expression",
-        FrontEnd`CopySpecial["CellExpression"]
-       ],
-       MenuItem[
-        "&Notebook Expression",
-        FrontEnd`CopySpecial["NotebookExpression"]
-       ]
-      }
-     ],
-     Delimiter,
-     MenuItem["&Merge Cells", "CellMerge"],
-     MenuItem["&Group Cells", "CellGroup"],
-     Delimiter,
-     MenuItem["&Open All Subgroups", "SelectionOpenAllGroups"],
-     MenuItem["C&lose All Subgroups", "SelectionCloseAllGroups"],
-     Delimiter,
-     MenuItem["&Evaluate Cells", "EvaluateCells"],
-     MenuItem[
-      "&Remove from Evaluation Queue",
-      "RemoveFromEvaluationQueue"
-     ],
-     MenuItem[
-      "Analyze Cells",
-      KernelExecute[
-       Needs["CodeInspector`"];
-       CodeInspector`AttachAnalysis[
-        SelectedCells[InputNotebook[]]
-       ]
-      ],
-      MenuEvaluator -> Automatic,
-      Method -> "Queued"
-     ],
-     Delimiter,
-     MenuItem["Clear &Formatting", "ClearCellOptions"],
-     Menu[
-      "&Style",
-      {
-       LinkedItems[
-        {
-         MenuItem[
-          "Start Cell Style Names",
-          "MenuListStyles",
-          MenuAnchor -> True
-         ]
-        }
-       ],
-       Delimiter,
-       MenuItem["&Other...", "StyleOther"]
-      }
-     ]
-    }
-   |>,
-   PrivateCellOptions -> {
-    "AccentStyle" -> {
-     CellTrayWidgets -> <|"ChatIncluded" -> <|"Condition" -> True|>|>
-    }
-   }
-  ],
-  Cell[
-   StyleData["ChatStyleSheetInformation"],
-   TaggingRules -> <|
-    "StyleSheetVersion" -> "1.4.2.3915595543",
-    "StyleSheetName" -> "Chatbook.nb"
    |>
   ],
   Cell[
+   StyleData["ChatStyleSheetInformation"],
+   TaggingRules -> <|"StyleSheetVersion" -> "1.5.2.3939013074"|>
+  ],
+  Cell[
    StyleData["Text"],
-   ContextMenu -> {
-    MenuItem[
-     "Ask AI Assistant",
-     KernelExecute[
-      With[ { Wolfram`ChatNB`nbo = InputNotebook[] },
-       {Wolfram`ChatNB`cells = SelectedCells[Wolfram`ChatNB`nbo]},
-       Quiet[Needs["Wolfram`Chatbook`" -> None]];
-       Symbol["Wolfram`Chatbook`ChatbookAction"][
-        "Ask",
-        Wolfram`ChatNB`nbo,
-        Wolfram`ChatNB`cells
-       ]
+   ContextMenu ->
+    Dynamic[
+     FEPrivate`Join[{MenuItem[#1, KernelExecute[With[{Wolfram`ChatNB`nbo = InputNotebook[]}, {Wolfram`ChatNB`cells = SelectedCells[Wolfram`ChatNB`nbo]}, Quiet[Needs["Wolfram`Chatbook`" -> None]]; Symbol["Wolfram`Chatbook`ChatbookAction"]["Ask", Wolfram`ChatNB`nbo, Wolfram`ChatNB`cells]]], MenuEvaluator -> Automatic, Method -> "Queued"], Delimiter}, FEPrivate`FrontEndResource["ContextMenus", "Text"]] &[
+      FEPrivate`FrontEndResource[
+       "ChatbookStrings",
+       "StylesheetContextMenuAskAI"
       ]
-     ],
-     MenuEvaluator -> Automatic,
-     Method -> "Queued"
-    ],
-    Delimiter,
-    MenuItem["Cu&t", "Cut"],
-    MenuItem["&Copy", "Copy"],
-    MenuItem["&Paste", FrontEnd`Paste[After]],
-    Menu[
-     "Cop&y As",
-     {
-      MenuItem["Plain &Text", FrontEnd`CopySpecial["PlainText"]],
-      MenuItem["&Input Text", FrontEnd`CopySpecial["InputText"]],
-      MenuItem[
-       "&LaTeX",
-       KernelExecute[ToExpression["FrontEnd`CopyAsTeX[]"]],
-       MenuEvaluator -> "System"
-      ],
-      MenuItem[
-       "M&athML",
-       KernelExecute[ToExpression["FrontEnd`CopyAsMathML[]"]],
-       MenuEvaluator -> "System"
-      ],
-      Delimiter,
-      MenuItem[
-       "Cell &Object",
-       FrontEnd`CopySpecial["CellObject"]
-      ],
-      MenuItem[
-       "&Cell Expression",
-       FrontEnd`CopySpecial["CellExpression"]
-      ],
-      MenuItem[
-       "&Notebook Expression",
-       FrontEnd`CopySpecial["NotebookExpression"]
-      ]
-     }
-    ],
-    Delimiter,
-    MenuItem["Make &Hyperlink...", "CreateHyperlinkDialog"],
-    MenuItem[
-     "Insert Table/&Matrix...",
-     FrontEndExecute[
-      {
-       FrontEnd`NotebookOpen[
-        FrontEnd`FindFileOnPath[
-         "InsertGrid.nb",
-         "PrivatePathsSystemResources"
-        ]
-       ]
-      }
-     ]
-    ],
-    MenuItem["Chec&k Spelling...", "FindNextMisspelling"],
-    Menu[
-     "Citatio&n",
-     {
-      MenuItem[
-       "Insert Bibliographical &Reference...",
-       "InsertBibReference"
-      ],
-      MenuItem[
-       "Insert Bibliographical &Note...",
-       "InsertBibNote"
-      ],
-      Delimiter,
-      MenuItem[
-       "Set / Change Citation &Style...",
-       "SetCitationStyle"
-      ],
-      MenuItem[
-       "&Insert Bibliography and Notes",
-       "InsertBibAndNotes"
-      ],
-      MenuItem[
-       "&Delete Bibliography and Notes",
-       "DeleteBibAndNotes"
-      ],
-      MenuItem[
-       "Re&build Bibliography and Notes",
-       "RebuildBibAndNotes"
-      ]
-     }
-    ],
-    Delimiter,
-    Menu[
-     "Sty&le",
-     {
-      MenuItem[
-       "Start Cell Style Names",
-       "MenuListStyles",
-       MenuAnchor -> True
-      ],
-      Delimiter,
-      MenuItem["&Other...", "StyleOther"]
-     }
-    ],
-    Delimiter,
-    MenuItem["Create Inline Cell", "CreateInlineCell"],
-    MenuItem["Di&vide Cell", "CellSplit"],
-    MenuItem["Evaluate &in Place", All],
-    Delimiter,
-    MenuItem[
-     "Toggle &Full Screen",
-     FrontEndExecute[
-      FrontEnd`Value[FEPrivate`NotebookToggleFullScreen[]]
      ]
     ]
-   }
   ],
   Cell[
    StyleData["Input"],
@@ -1308,238 +859,28 @@ Notebook[
       Wolfram`ChatNB`cell
      ]
     ],
-   ContextMenu -> {
-    MenuItem[
-     "Ask AI Assistant",
-     KernelExecute[
-      With[ { Wolfram`ChatNB`nbo = InputNotebook[] },
-       {Wolfram`ChatNB`cells = SelectedCells[Wolfram`ChatNB`nbo]},
-       Quiet[Needs["Wolfram`Chatbook`" -> None]];
-       Symbol["Wolfram`Chatbook`ChatbookAction"][
-        "Ask",
-        Wolfram`ChatNB`nbo,
-        Wolfram`ChatNB`cells
-       ]
+   ContextMenu ->
+    Dynamic[
+     FEPrivate`Join[{MenuItem[#1, KernelExecute[With[{Wolfram`ChatNB`nbo = InputNotebook[]}, {Wolfram`ChatNB`cells = SelectedCells[Wolfram`ChatNB`nbo]}, Quiet[Needs["Wolfram`Chatbook`" -> None]]; Symbol["Wolfram`Chatbook`ChatbookAction"]["Ask", Wolfram`ChatNB`nbo, Wolfram`ChatNB`cells]]], MenuEvaluator -> Automatic, Method -> "Queued"], Delimiter}, FEPrivate`FrontEndResource["ContextMenus", "Input"]] &[
+      FEPrivate`FrontEndResource[
+       "ChatbookStrings",
+       "StylesheetContextMenuAskAI"
       ]
-     ],
-     MenuEvaluator -> Automatic,
-     Method -> "Queued"
-    ],
-    Delimiter,
-    MenuItem["Cu&t", "Cut"],
-    MenuItem["&Copy", "Copy"],
-    MenuItem["&Paste", FrontEnd`Paste[After]],
-    Menu[
-     "Cop&y As",
-     {
-      MenuItem["Plain &Text", FrontEnd`CopySpecial["PlainText"]],
-      MenuItem["&Input Text", FrontEnd`CopySpecial["InputText"]],
-      MenuItem[
-       "&LaTeX",
-       KernelExecute[ToExpression["FrontEnd`CopyAsTeX[]"]],
-       MenuEvaluator -> "System"
-      ],
-      MenuItem[
-       "M&athML",
-       KernelExecute[ToExpression["FrontEnd`CopyAsMathML[]"]],
-       MenuEvaluator -> "System"
-      ],
-      Delimiter,
-      MenuItem[
-       "Cell &Object",
-       FrontEnd`CopySpecial["CellObject"]
-      ],
-      MenuItem[
-       "&Cell Expression",
-       FrontEnd`CopySpecial["CellExpression"]
-      ],
-      MenuItem[
-       "&Notebook Expression",
-       FrontEnd`CopySpecial["NotebookExpression"]
-      ]
-     }
-    ],
-    Delimiter,
-    MenuItem["&Evaluate Cell", "EvaluateCells"],
-    MenuItem["Evaluate &in Place", All],
-    MenuItem[
-     "Analyze Cell",
-     KernelExecute[
-      Needs["CodeInspector`"];
-      CodeInspector`AttachAnalysis[
-       SelectedCells[InputNotebook[]]
-      ]
-     ],
-     MenuEvaluator -> Automatic,
-     Method -> "Queued"
-    ],
-    Menu[
-     "C&onvert To",
-     {
-      MenuItem["&InputForm", "SelectionConvert" -> InputForm],
-      MenuItem[
-       "&Raw InputForm",
-       "SelectionConvert" -> RawInputForm
-      ],
-      MenuItem["&OutputForm", "SelectionConvert" -> OutputForm],
-      MenuItem[
-       "First Convert to BoxForm",
-       "MenuListConvertFormatTypes",
-       MenuAnchor -> True
-      ],
-      Delimiter,
-      MenuItem["&Bitmap", "SelectionConvert" -> "Bitmap"]
-     }
-    ],
-    Delimiter,
-    MenuItem["Make &Hyperlink...", "CreateHyperlinkDialog"],
-    MenuItem[
-     "Insert Table/&Matrix...",
-     FrontEndExecute[
-      {
-       FrontEnd`NotebookOpen[
-        FrontEnd`FindFileOnPath[
-         "InsertGrid.nb",
-         "PrivatePathsSystemResources"
-        ]
-       ]
-      }
-     ]
-    ],
-    MenuItem[
-     "Insert &Special Character...",
-     FrontEndExecute[
-      {FrontEnd`NotebookOpen["SpecialCharacters.nb"]}
-     ]
-    ],
-    Delimiter,
-    MenuItem["Check &Balance", "Balance"],
-    MenuItem["Di&vide Cell", "CellSplit"],
-    MenuItem[
-     "&Un/Comment Selection",
-     KernelExecute[ToExpression["FE`toggleComment[]"]],
-     MenuEvaluator -> "System"
-    ],
-    MenuItem[
-     "Un/Iconi&ze Selection",
-     KernelExecute[ToExpression["FE`iconizeSelectionToggle[]"]],
-     MenuEvaluator -> Automatic
-    ],
-    Delimiter,
-    MenuItem["&Get Help", FrontEnd`SelectionHelpDialog[True]],
-    MenuItem[
-     "Why the Coloring?...",
-     FrontEndExecute[
-      {
-       FrontEnd`NotebookOpen[
-        FrontEnd`FindFileOnPath[
-         "WhyTheColoring.nb",
-         "PrivatePathsSystemResources"
-        ]
-       ]
-      }
-     ]
-    ],
-    MenuItem["Spea&k Selection", "SelectionSpeak"],
-    Delimiter,
-    MenuItem[
-     "Toggle &Full Screen",
-     FrontEndExecute[
-      FrontEnd`Value[FEPrivate`NotebookToggleFullScreen[]]
      ]
     ]
-   }
   ],
   Cell[
    StyleData["Output"],
    CellTrayWidgets -> <|"GearMenu" -> <|"Condition" -> False|>|>,
-   ContextMenu -> {
-    MenuItem[
-     "Ask AI Assistant",
-     KernelExecute[
-      With[ { Wolfram`ChatNB`nbo = InputNotebook[] },
-       {Wolfram`ChatNB`cells = SelectedCells[Wolfram`ChatNB`nbo]},
-       Quiet[Needs["Wolfram`Chatbook`" -> None]];
-       Symbol["Wolfram`Chatbook`ChatbookAction"][
-        "Ask",
-        Wolfram`ChatNB`nbo,
-        Wolfram`ChatNB`cells
-       ]
+   ContextMenu ->
+    Dynamic[
+     FEPrivate`Join[{MenuItem[#1, KernelExecute[With[{Wolfram`ChatNB`nbo = InputNotebook[]}, {Wolfram`ChatNB`cells = SelectedCells[Wolfram`ChatNB`nbo]}, Quiet[Needs["Wolfram`Chatbook`" -> None]]; Symbol["Wolfram`Chatbook`ChatbookAction"]["Ask", Wolfram`ChatNB`nbo, Wolfram`ChatNB`cells]]], MenuEvaluator -> Automatic, Method -> "Queued"], Delimiter}, FEPrivate`FrontEndResource["ContextMenus", "Output"]] &[
+      FEPrivate`FrontEndResource[
+       "ChatbookStrings",
+       "StylesheetContextMenuAskAI"
       ]
-     ],
-     MenuEvaluator -> Automatic,
-     Method -> "Queued"
-    ],
-    Delimiter,
-    MenuItem["Cu&t", "Cut"],
-    MenuItem["&Copy", "Copy"],
-    MenuItem["&Paste", FrontEnd`Paste[After]],
-    Menu[
-     "Cop&y As",
-     {
-      MenuItem["Plain &Text", FrontEnd`CopySpecial["PlainText"]],
-      MenuItem["&Input Text", FrontEnd`CopySpecial["InputText"]],
-      MenuItem[
-       "&LaTeX",
-       KernelExecute[ToExpression["FrontEnd`CopyAsTeX[]"]],
-       MenuEvaluator -> "System"
-      ],
-      MenuItem[
-       "M&athML",
-       KernelExecute[ToExpression["FrontEnd`CopyAsMathML[]"]],
-       MenuEvaluator -> "System"
-      ],
-      Delimiter,
-      MenuItem[
-       "Cell &Object",
-       FrontEnd`CopySpecial["CellObject"]
-      ],
-      MenuItem[
-       "&Cell Expression",
-       FrontEnd`CopySpecial["CellExpression"]
-      ],
-      MenuItem[
-       "&Notebook Expression",
-       FrontEnd`CopySpecial["NotebookExpression"]
-      ]
-     }
-    ],
-    Delimiter,
-    Menu[
-     "Con&vert To",
-     {
-      MenuItem["&InputForm", "SelectionConvert" -> InputForm],
-      MenuItem[
-       "&Raw InputForm",
-       "SelectionConvert" -> RawInputForm
-      ],
-      MenuItem["&OutputForm", "SelectionConvert" -> OutputForm],
-      MenuItem[
-       "First Convert to BoxForm",
-       "MenuListConvertFormatTypes",
-       MenuAnchor -> True
-      ],
-      Delimiter,
-      MenuItem["&Bitmap", "SelectionConvert" -> "Bitmap"]
-     }
-    ],
-    Delimiter,
-    MenuItem[
-     "Un/Iconi&ze Selection",
-     KernelExecute[ToExpression["FE`iconizeSelectionToggle[]"]],
-     MenuEvaluator -> Automatic
-    ],
-    Delimiter,
-    MenuItem["&Get Help", FrontEnd`SelectionHelpDialog[True]],
-    MenuItem["Spea&k Selection", "SelectionSpeak"],
-    Delimiter,
-    MenuItem[
-     "Toggle &Full Screen",
-     FrontEndExecute[
-      FrontEnd`Value[FEPrivate`NotebookToggleFullScreen[]]
      ]
     ]
-   }
   ],
   Cell[
    StyleData["Message"],
@@ -1580,8 +921,13 @@ Notebook[
      CellFrame -> 0,
      CellMargins -> 0
     ],
-   CellMargins -> {{66, 25}, {1, 8}},
-   StyleKeyMapping -> {"~" -> "ChatDelimiter", "'" -> "SideChat"},
+   CellMargins -> {{66, 32}, {1, 8}},
+   StyleKeyMapping -> {
+    "~" -> "ChatDelimiter",
+    "'" -> "SideChat",
+    "=" -> "WolframAlphaShort",
+    "*" -> "Item"
+   },
    Evaluatable -> True,
    CellGroupingRules -> "InputGrouping",
    TaggingRules -> <|"ChatNotebookSettings" -> <||>|>,
@@ -1651,6 +997,26 @@ Notebook[
      ]
    },
    CellFrameColor -> RGBColor[0.639216, 0.788235, 0.94902],
+   CellFrameLabels -> {
+    {
+     None,
+     Cell[
+      BoxData[
+       TemplateBox[
+        {
+         RGBColor[0.639216, 0.788235, 0.94902],
+         RGBColor[0.945098, 0.968627, 0.992157],
+         20
+        },
+        "SendChatButton"
+       ]
+      ],
+      Background -> None
+     ]
+    },
+    {None, None}
+   },
+   CellFrameLabelMargins -> -32,
    CounterIncrements -> {"ChatInputCount"},
    MenuSortingValue -> 1543
   ],
@@ -1740,50 +1106,22 @@ Notebook[
      BoxData[
       RowBox[
        {
-        PaneSelectorBox[
-         {
-          True ->
-           DynamicModuleBox[
-            {Wolfram`Chatbook`UI`Private`cell$$},
-            DynamicBox[
-             ToBoxes[
-              Catch[
-               Wolfram`Chatbook`Dynamics`Private`$chatBlockTrigger;
-               Wolfram`Chatbook`UI`MakeChatInputActiveCellDingbat[
-                Wolfram`Chatbook`UI`Private`cell$$
-               ],
-               Blank[]
-              ],
-              StandardForm
-             ],
-             TrackedSymbols :> {Wolfram`Chatbook`Dynamics`Private`$chatBlockTrigger}
-            ],
-            Initialization :>
-             (Wolfram`Chatbook`UI`Private`cell$$ = EvaluationCell[];
-             Needs["Wolfram`Chatbook`" -> None]),
-            DynamicModuleValues :> { },
-            UnsavedVariables :> {Wolfram`Chatbook`UI`Private`cell$$}
-           ],
-          False ->
-           FrameBox[
-            TemplateBox[{}, "ChatIconUser"],
-            RoundingRadius -> 3,
-            FrameMargins -> 2,
-            ImageMargins -> {{0, 3}, {0, 0}},
-            FrameStyle -> GrayLevel[0, 0],
-            FrameMargins -> 0,
-            StripOnInput -> False
-           ]
-         },
-         Dynamic[CurrentValue["MouseOver"]],
-         ImageSize -> All
+        DynamicBox[
+         ToBoxes[
+          If[ TrueQ[CloudSystem`$CloudNotebooks],
+           RawBoxes[TemplateBox[{}, "ChatIconUser"]],
+           RawBoxes[TemplateBox[{}, "ChatInputActiveCellDingbat"]]
+          ],
+          StandardForm
+         ]
         ],
         TemplateBox[{12}, "Spacer1"]
        }
       ]
      ],
      CellFrame -> {{0, 0}, {0, 2}},
-     CellFrameMargins -> 5
+     CellFrameColor -> RGBColor[0.639216, 0.788235, 0.94902],
+     CellFrameMargins -> 6
     ],
    CellMargins -> {{79, 26}, {Inherited, Inherited}},
    CellDingbatMargin -> 0,
@@ -1874,10 +1212,28 @@ Notebook[
                  ImageSize -> Automatic,
                  FrameMargins -> 0
                 ],
-                "\"Send feedback to Wolfram\"",
-                TooltipStyle -> "TextStyling"
+                DynamicBox[
+                 ToBoxes[
+                  FEPrivate`FrontEndResource[
+                   "ChatbookStrings",
+                   "StylesheetFeedbackButtonTooltip"
+                  ],
+                  StandardForm
+                 ]
+                ]
                ],
-               Annotation[#1, "Send feedback to Wolfram", "Tooltip"] &
+               Function[
+                Annotation[
+                 #1,
+                 Dynamic[
+                  FEPrivate`FrontEndResource[
+                   "ChatbookStrings",
+                   "StylesheetFeedbackButtonTooltip"
+                  ]
+                 ],
+                 "Tooltip"
+                ]
+               ]
               ],
               MouseAppearanceTag["LinkHand"]
              ],
@@ -1918,10 +1274,28 @@ Notebook[
                  ImageSize -> Automatic,
                  FrameMargins -> 0
                 ],
-                "\"Send feedback to Wolfram\"",
-                TooltipStyle -> "TextStyling"
+                DynamicBox[
+                 ToBoxes[
+                  FEPrivate`FrontEndResource[
+                   "ChatbookStrings",
+                   "StylesheetFeedbackButtonTooltip"
+                  ],
+                  StandardForm
+                 ]
+                ]
                ],
-               Annotation[#1, "Send feedback to Wolfram", "Tooltip"] &
+               Function[
+                Annotation[
+                 #1,
+                 Dynamic[
+                  FEPrivate`FrontEndResource[
+                   "ChatbookStrings",
+                   "StylesheetFeedbackButtonTooltip"
+                  ]
+                 ],
+                 "Tooltip"
+                ]
+               ]
               ],
               MouseAppearanceTag["LinkHand"]
              ],
@@ -2050,10 +1424,28 @@ Notebook[
                 Evaluator -> Automatic,
                 Method -> "Preemptive"
                ],
-               "\"Disable automatic assistance\"",
-               TooltipStyle -> "TextStyling"
+               DynamicBox[
+                ToBoxes[
+                 FEPrivate`FrontEndResource[
+                  "ChatbookStrings",
+                  "StylesheetAssistantMenuInitializerButtonTooltip"
+                 ],
+                 StandardForm
+                ]
+               ]
               ],
-              Annotation[#1, "Disable automatic assistance", "Tooltip"] &
+              Function[
+               Annotation[
+                #1,
+                Dynamic[
+                 FEPrivate`FrontEndResource[
+                  "ChatbookStrings",
+                  "StylesheetAssistantMenuInitializerButtonTooltip"
+                 ]
+                ],
+                "Tooltip"
+               ]
+              ]
              ]
             },
             {
@@ -2132,10 +1524,28 @@ Notebook[
                 Evaluator -> Automatic,
                 Method -> "Preemptive"
                ],
-               "\"Disable automatic assistance\"",
-               TooltipStyle -> "TextStyling"
+               DynamicBox[
+                ToBoxes[
+                 FEPrivate`FrontEndResource[
+                  "ChatbookStrings",
+                  "StylesheetAssistantMenuInitializerButtonTooltip"
+                 ],
+                 StandardForm
+                ]
+               ]
               ],
-              Annotation[#1, "Disable automatic assistance", "Tooltip"] &
+              Function[
+               Annotation[
+                #1,
+                Dynamic[
+                 FEPrivate`FrontEndResource[
+                  "ChatbookStrings",
+                  "StylesheetAssistantMenuInitializerButtonTooltip"
+                 ]
+                ],
+                "Tooltip"
+               ]
+              ]
              ]
             },
             {
@@ -2214,10 +1624,28 @@ Notebook[
                 Evaluator -> Automatic,
                 Method -> "Preemptive"
                ],
-               "\"Disable automatic assistance\"",
-               TooltipStyle -> "TextStyling"
+               DynamicBox[
+                ToBoxes[
+                 FEPrivate`FrontEndResource[
+                  "ChatbookStrings",
+                  "StylesheetAssistantMenuInitializerButtonTooltip"
+                 ],
+                 StandardForm
+                ]
+               ]
               ],
-              Annotation[#1, "Disable automatic assistance", "Tooltip"] &
+              Function[
+               Annotation[
+                #1,
+                Dynamic[
+                 FEPrivate`FrontEndResource[
+                  "ChatbookStrings",
+                  "StylesheetAssistantMenuInitializerButtonTooltip"
+                 ]
+                ],
+                "Tooltip"
+               ]
+              ]
              ]
             },
             {
@@ -2388,11 +1816,17 @@ Notebook[
        Initialization :>
         (Wolfram`ChatNB`cell$$ = EvaluationCell[];
         Needs["Wolfram`Chatbook`" -> None];
-        Wolfram`Chatbook`Dynamics`updateDynamics["ChatBlock"]),
+        Symbol["Wolfram`Chatbook`ChatbookAction"][
+         "UpdateDynamics",
+         "ChatBlock"
+        ]),
        DynamicModuleValues :> { },
        Deinitialization :>
         (Needs["Wolfram`Chatbook`" -> None];
-        Wolfram`Chatbook`Dynamics`updateDynamics["ChatBlock"]),
+        Symbol["Wolfram`Chatbook`ChatbookAction"][
+         "UpdateDynamics",
+         "ChatBlock"
+        ]),
        UnsavedVariables :> {Wolfram`ChatNB`cell$$}
       ]
      ])
@@ -2486,7 +1920,12 @@ Notebook[
        FrameMargins -> {{3, 3}, {2, 2}},
        FrameStyle ->
         Directive[AbsoluteThickness[1], GrayLevel[0.92941]],
-       ImageMargins -> {{0, 0}, {0, 0}}
+       ImageMargins -> {{0, 0}, {0, 0}},
+       BaseStyle -> {
+        "InlineCode",
+        AutoSpacing -> False,
+        AutoMultiplicationSymbol -> False
+       }
       ]
      ])
    }
@@ -2790,7 +2229,15 @@ Notebook[
              TemplateBox[
               {
                TemplateBox[{"DivideCellsIcon"}, "ChatMenuItemToolbarIcon"],
-               "\"Explode Cells (In Place)\"",
+               DynamicBox[
+                ToBoxes[
+                 FEPrivate`FrontEndResource[
+                  "ChatbookStrings",
+                  "StylesheetExplodeCellsInPlace"
+                 ],
+                 StandardForm
+                ]
+               ],
                Hold[
                 With[ { Wolfram`ChatNB`cell$ = EvaluationCell[] },
                  {Wolfram`ChatNB`root$ = ParentCell[Wolfram`ChatNB`cell$]},
@@ -2812,7 +2259,15 @@ Notebook[
              TemplateBox[
               {
                TemplateBox[{"OverflowIcon"}, "ChatMenuItemToolbarIcon"],
-               "\"Explode Cells (Duplicate)\"",
+               DynamicBox[
+                ToBoxes[
+                 FEPrivate`FrontEndResource[
+                  "ChatbookStrings",
+                  "StylesheetExplodeCellsDuplicate"
+                 ],
+                 StandardForm
+                ]
+               ],
                Hold[
                 With[ { Wolfram`ChatNB`cell$ = EvaluationCell[] },
                  {Wolfram`ChatNB`root$ = ParentCell[Wolfram`ChatNB`cell$]},
@@ -2837,7 +2292,15 @@ Notebook[
                 {"HyperlinkCopyIcon"},
                 "ChatMenuItemToolbarIcon"
                ],
-               "\"Copy Exploded Cells\"",
+               DynamicBox[
+                ToBoxes[
+                 FEPrivate`FrontEndResource[
+                  "ChatbookStrings",
+                  "StylesheetCopyExplodedCells"
+                 ],
+                 StandardForm
+                ]
+               ],
                Hold[
                 With[ { Wolfram`ChatNB`cell$ = EvaluationCell[] },
                  {Wolfram`ChatNB`root$ = ParentCell[Wolfram`ChatNB`cell$]},
@@ -2860,7 +2323,15 @@ Notebook[
              TemplateBox[
               {
                TemplateBox[{"TypesettingIcon"}, "ChatMenuItemToolbarIcon"],
-               "\"Toggle Formatting\"",
+               DynamicBox[
+                ToBoxes[
+                 FEPrivate`FrontEndResource[
+                  "ChatbookStrings",
+                  "StylesheetToggleFormatting"
+                 ],
+                 StandardForm
+                ]
+               ],
                Hold[
                 With[ { Wolfram`ChatNB`cell$ = EvaluationCell[] },
                  {Wolfram`ChatNB`root$ = ParentCell[Wolfram`ChatNB`cell$]},
@@ -2882,7 +2353,15 @@ Notebook[
              TemplateBox[
               {
                TemplateBox[{"InPlaceIcon"}, "ChatMenuItemToolbarIcon"],
-               "\"Copy ChatObject\"",
+               DynamicBox[
+                ToBoxes[
+                 FEPrivate`FrontEndResource[
+                  "ChatbookStrings",
+                  "StylesheetCopyChatObject"
+                 ],
+                 StandardForm
+                ]
+               ],
                Hold[
                 With[ { Wolfram`ChatNB`cell$ = EvaluationCell[] },
                  {Wolfram`ChatNB`root$ = ParentCell[Wolfram`ChatNB`cell$]},
@@ -4489,6 +3968,368 @@ Notebook[
    }
   ],
   Cell[
+   StyleData["ChatEvaluatingSpinner"],
+   TemplateBoxOptions -> {
+    DisplayFunction ->
+     (Function[
+      DynamicBox[
+       If[ TrueQ[$CloudEvaluation],
+        GraphicsBox[
+         {Thickness[0.05], GrayLevel[0.9], CircleBox[{0, 0}, 1]},
+         PlotRange -> 1.1,
+         ImageSize -> #1
+        ],
+        DynamicModuleBox[
+         {Wolfram`ChatNB`i},
+         OverlayBox[
+          {
+           PaneBox[
+            AnimatorBox[
+             Dynamic[Wolfram`ChatNB`i],
+             {1, 30, 1},
+             AutoAction -> False,
+             AnimationRate -> Automatic,
+             DisplayAllSteps -> True,
+             DefaultDuration -> 2,
+             AppearanceElements -> None
+            ],
+            ImageSize -> {0, 0}
+           ],
+           GraphicsBox[
+            {
+             Thickness[0.05],
+             GrayLevel[0.9],
+             CircleBox[{0, 0}, 1, {0.0, 6.2832}]
+            },
+            PlotRange -> 1.1,
+            ImageSize -> #1
+           ],
+           PaneSelectorBox[
+            {
+             1 ->
+              GraphicsBox[
+               {
+                Thickness[0.06],
+                GrayLevel[0.7],
+                CircleBox[{0, 0}, 1, {4.5332, 4.9332}]
+               },
+               PlotRange -> 1.1,
+               ImageSize -> #1
+              ],
+             2 ->
+              GraphicsBox[
+               {
+                Thickness[0.06],
+                GrayLevel[0.7],
+                CircleBox[{0, 0}, 1, {4.5151, 4.9332}]
+               },
+               PlotRange -> 1.1,
+               ImageSize -> #1
+              ],
+             3 ->
+              GraphicsBox[
+               {
+                Thickness[0.06],
+                GrayLevel[0.7],
+                CircleBox[{0, 0}, 1, {4.4611, 4.9332}]
+               },
+               PlotRange -> 1.1,
+               ImageSize -> #1
+              ],
+             4 ->
+              GraphicsBox[
+               {
+                Thickness[0.06],
+                GrayLevel[0.7],
+                CircleBox[{0, 0}, 1, {4.3713, 4.9332}]
+               },
+               PlotRange -> 1.1,
+               ImageSize -> #1
+              ],
+             5 ->
+              GraphicsBox[
+               {
+                Thickness[0.06],
+                GrayLevel[0.7],
+                CircleBox[{0, 0}, 1, {4.2463, 4.9332}]
+               },
+               PlotRange -> 1.1,
+               ImageSize -> #1
+              ],
+             6 ->
+              GraphicsBox[
+               {
+                Thickness[0.06],
+                GrayLevel[0.7],
+                CircleBox[{0, 0}, 1, {4.0869, 4.9332}]
+               },
+               PlotRange -> 1.1,
+               ImageSize -> #1
+              ],
+             7 ->
+              GraphicsBox[
+               {
+                Thickness[0.06],
+                GrayLevel[0.7],
+                CircleBox[{0, 0}, 1, {3.894, 4.9332}]
+               },
+               PlotRange -> 1.1,
+               ImageSize -> #1
+              ],
+             8 ->
+              GraphicsBox[
+               {
+                Thickness[0.06],
+                GrayLevel[0.7],
+                CircleBox[{0, 0}, 1, {3.6686, 4.9332}]
+               },
+               PlotRange -> 1.1,
+               ImageSize -> #1
+              ],
+             9 ->
+              GraphicsBox[
+               {
+                Thickness[0.06],
+                GrayLevel[0.7],
+                CircleBox[{0, 0}, 1, {3.412, 4.9332}]
+               },
+               PlotRange -> 1.1,
+               ImageSize -> #1
+              ],
+             10 ->
+              GraphicsBox[
+               {
+                Thickness[0.06],
+                GrayLevel[0.7],
+                CircleBox[{0, 0}, 1, {3.1258, 4.924}]
+               },
+               PlotRange -> 1.1,
+               ImageSize -> #1
+              ],
+             11 ->
+              GraphicsBox[
+               {
+                Thickness[0.06],
+                GrayLevel[0.7],
+                CircleBox[{0, 0}, 1, {2.8116, 4.8802}]
+               },
+               PlotRange -> 1.1,
+               ImageSize -> #1
+              ],
+             12 ->
+              GraphicsBox[
+               {
+                Thickness[0.06],
+                GrayLevel[0.7],
+                CircleBox[{0, 0}, 1, {2.4711, 4.8006}]
+               },
+               PlotRange -> 1.1,
+               ImageSize -> #1
+              ],
+             13 ->
+              GraphicsBox[
+               {
+                Thickness[0.06],
+                GrayLevel[0.7],
+                CircleBox[{0, 0}, 1, {2.1064, 4.6856}]
+               },
+               PlotRange -> 1.1,
+               ImageSize -> #1
+              ],
+             14 ->
+              GraphicsBox[
+               {
+                Thickness[0.06],
+                GrayLevel[0.7],
+                CircleBox[{0, 0}, 1, {1.7195, 4.5359}]
+               },
+               PlotRange -> 1.1,
+               ImageSize -> #1
+              ],
+             15 ->
+              GraphicsBox[
+               {
+                Thickness[0.06],
+                GrayLevel[0.7],
+                CircleBox[{0, 0}, 1, {1.3127, 4.3525}]
+               },
+               PlotRange -> 1.1,
+               ImageSize -> #1
+              ],
+             16 ->
+              GraphicsBox[
+               {
+                Thickness[0.06],
+                GrayLevel[0.7],
+                CircleBox[{0, 0}, 1, {0.88824, 4.1362}]
+               },
+               PlotRange -> 1.1,
+               ImageSize -> #1
+              ],
+             17 ->
+              GraphicsBox[
+               {
+                Thickness[0.06],
+                GrayLevel[0.7],
+                CircleBox[{0, 0}, 1, {0.44865, 3.8884}]
+               },
+               PlotRange -> 1.1,
+               ImageSize -> #1
+              ],
+             18 ->
+              GraphicsBox[
+               {
+                Thickness[0.06],
+                GrayLevel[0.7],
+                CircleBox[{0, 0}, 1, {-0.0035846, 3.6105}]
+               },
+               PlotRange -> 1.1,
+               ImageSize -> #1
+              ],
+             19 ->
+              GraphicsBox[
+               {
+                Thickness[0.06],
+                GrayLevel[0.7],
+                CircleBox[{0, 0}, 1, {-0.46585, 3.3041}]
+               },
+               PlotRange -> 1.1,
+               ImageSize -> #1
+              ],
+             20 ->
+              GraphicsBox[
+               {
+                Thickness[0.06],
+                GrayLevel[0.7],
+                CircleBox[{0, 0}, 1, {-0.9355, 2.9709}]
+               },
+               PlotRange -> 1.1,
+               ImageSize -> #1
+              ],
+             21 ->
+              GraphicsBox[
+               {
+                Thickness[0.06],
+                GrayLevel[0.7],
+                CircleBox[{0, 0}, 1, {-1.4098, 2.6129}]
+               },
+               PlotRange -> 1.1,
+               ImageSize -> #1
+              ],
+             22 ->
+              GraphicsBox[
+               {
+                Thickness[0.06],
+                GrayLevel[0.7],
+                CircleBox[{0, 0}, 1, {-1.75, 2.2322}]
+               },
+               PlotRange -> 1.1,
+               ImageSize -> #1
+              ],
+             23 ->
+              GraphicsBox[
+               {
+                Thickness[0.06],
+                GrayLevel[0.7],
+                CircleBox[{0, 0}, 1, {-1.75, 1.8308}]
+               },
+               PlotRange -> 1.1,
+               ImageSize -> #1
+              ],
+             24 ->
+              GraphicsBox[
+               {
+                Thickness[0.06],
+                GrayLevel[0.7],
+                CircleBox[{0, 0}, 1, {-1.75, 1.4112}]
+               },
+               PlotRange -> 1.1,
+               ImageSize -> #1
+              ],
+             25 ->
+              GraphicsBox[
+               {
+                Thickness[0.06],
+                GrayLevel[0.7],
+                CircleBox[{0, 0}, 1, {-1.75, 0.97565}]
+               },
+               PlotRange -> 1.1,
+               ImageSize -> #1
+              ],
+             26 ->
+              GraphicsBox[
+               {
+                Thickness[0.06],
+                GrayLevel[0.7],
+                CircleBox[{0, 0}, 1, {-1.75, 0.52676}]
+               },
+               PlotRange -> 1.1,
+               ImageSize -> #1
+              ],
+             27 ->
+              GraphicsBox[
+               {
+                Thickness[0.06],
+                GrayLevel[0.7],
+                CircleBox[{0, 0}, 1, {-1.75, 0.067093}]
+               },
+               PlotRange -> 1.1,
+               ImageSize -> #1
+              ],
+             28 ->
+              GraphicsBox[
+               {
+                Thickness[0.06],
+                GrayLevel[0.7],
+                CircleBox[{0, 0}, 1, {-1.75, -0.40072}]
+               },
+               PlotRange -> 1.1,
+               ImageSize -> #1
+              ],
+             29 ->
+              GraphicsBox[
+               {
+                Thickness[0.06],
+                GrayLevel[0.7],
+                CircleBox[{0, 0}, 1, {-1.75, -0.87399}]
+               },
+               PlotRange -> 1.1,
+               ImageSize -> #1
+              ],
+             30 ->
+              GraphicsBox[
+               {
+                Thickness[0.06],
+                GrayLevel[0.7],
+                CircleBox[{0, 0}, 1, {-1.75, -1.35}]
+               },
+               PlotRange -> 1.1,
+               ImageSize -> #1
+              ]
+            },
+            Dynamic[Wolfram`ChatNB`i],
+            ContentPadding -> False,
+            FrameMargins -> 0,
+            ImageSize -> All,
+            Alignment -> Automatic,
+            BaseStyle -> None,
+            TransitionDirection -> Horizontal,
+            TransitionDuration -> 0.5,
+            TransitionEffect -> Automatic
+           ]
+          },
+          ContentPadding -> False,
+          FrameMargins -> 0
+         ],
+         DynamicModuleValues :> { }
+        ]
+       ],
+       SingleEvaluation -> True
+      ]
+     ])
+   }
+  ],
+  Cell[
    StyleData["ChatExcludedWidget"],
    TemplateBoxOptions -> {
     DisplayFunction ->
@@ -5037,6 +4878,176 @@ Notebook[
         ]
        },
        ImageSize -> {21, 21}
+      ]
+     ])
+   }
+  ],
+  Cell[
+   StyleData["ChatIconNotebookAssistant"],
+   TemplateBoxOptions -> {
+    DisplayFunction ->
+     (Function[
+      GraphicsBox[
+       {
+        Thickness[0.038462],
+        StyleBox[
+         {
+          FilledCurveBox[
+           {
+            {
+             {0, 2, 0},
+             {1, 3, 3},
+             {0, 1, 0},
+             {1, 3, 3},
+             {0, 1, 0},
+             {1, 3, 3},
+             {0, 1, 0},
+             {1, 3, 3},
+             {0, 1, 0},
+             {0, 1, 0},
+             {0, 1, 0}
+            }
+           },
+           CompressedData[
+            "\n1:eJxTTMoPSmVmYGBgBGIRIGZigIIGBQcUmkEEzv90yTdJIEIITV7Qga1xqnO3\njiKcD6GV0PimcL5Ld87z35mmqOYdgMmLoPFN4XyYPhR5XOJI+oozJr6t+a8I\n51e+VDPkALoXRR/cPwh+7vPfKz9e0kSVB9L6d1XYGkWFMMQBtjo+0A==\n       "
+           ]
+          ]
+         },
+         {FaceForm[RGBColor[0.4902, 0.82353, 1.0, 1.0]]},
+         StripOnInput -> False
+        ],
+        StyleBox[
+         {
+          FilledCurveBox[
+           {
+            {
+             {0, 2, 0},
+             {1, 3, 3},
+             {0, 1, 0},
+             {1, 3, 3},
+             {0, 1, 0},
+             {0, 1, 0},
+             {0, 1, 0},
+             {0, 1, 0},
+             {1, 3, 3},
+             {0, 1, 0},
+             {1, 3, 3}
+            },
+            {
+             {1, 4, 3},
+             {0, 1, 0},
+             {1, 3, 3},
+             {1, 3, 3},
+             {0, 1, 0},
+             {0, 1, 0},
+             {0, 1, 0},
+             {0, 1, 0},
+             {0, 1, 0},
+             {0, 1, 0},
+             {0, 1, 0},
+             {0, 1, 0},
+             {1, 3, 3},
+             {0, 1, 0},
+             {1, 3, 3},
+             {0, 1, 0}
+            }
+           },
+           {
+            CompressedData[
+             "\n1:eJxTTMoPSmViYGAQAWIQDQGmDhDaDEqLwPkz8oSaD5wSRJMXcIhKsb7v32sK\n56OaA+Mrwfk+5p2OCU8V0MxTQLNPgQANM1cLTdwUzkd1F0zezGHffCn9u08Q\n/OKMiW9r/iui+QsRDjBzUM3DVAcAxvcssw==\n        "
+            ],
+            CompressedData[
+             "\n1:eJxTTMoPSmViYGCQBmIQDQGmDmCqwdRBd9Pc98vdEHy84kj6ijMmvq35rwjn\nc6yRiUrZreiwbPYRhQ1Fpg7VIuvcH1YpOmw5UbZvfpSpw4w8oeYDXooOf1Z+\nvOTrZAoRl4LylWDmK6LaA+drwflpILBME84/7m3e6Zig6eDxsEpk3XEFuLhm\nTP+hrxoiaOYooPFxiSP0+YCMfyqEJi8E9SeCD6GV0PimcD4sPFHMg4erCBof\nEc4A/3BXag==\n        "
+            ]
+           }
+          ]
+         },
+         {FaceForm[RGBColor[0.18824, 0.49412, 0.6549, 1.0]]},
+         StripOnInput -> False
+        ],
+        StyleBox[
+         {
+          FilledCurveBox[
+           {
+            {{1, 4, 3}, {1, 3, 3}, {1, 3, 3}, {1, 3, 3}},
+            {{1, 4, 3}, {1, 3, 3}, {1, 3, 3}, {1, 3, 3}},
+            {
+             {1, 4, 3},
+             {1, 3, 3},
+             {1, 3, 3},
+             {1, 3, 3},
+             {1, 3, 3},
+             {1, 3, 3},
+             {1, 3, 3},
+             {1, 3, 3},
+             {0, 1, 0},
+             {0, 1, 0},
+             {1, 3, 3},
+             {1, 3, 3},
+             {1, 3, 3},
+             {1, 3, 3},
+             {1, 3, 3},
+             {0, 1, 0},
+             {0, 1, 0},
+             {1, 3, 3},
+             {1, 3, 3},
+             {1, 3, 3},
+             {1, 3, 3},
+             {1, 3, 3},
+             {1, 3, 3},
+             {1, 3, 3},
+             {1, 3, 3},
+             {1, 3, 3},
+             {0, 1, 0},
+             {0, 1, 0},
+             {0, 1, 0},
+             {0, 1, 0},
+             {0, 1, 0}
+            }
+           },
+           {
+            {
+             {13.992, 13.049},
+             {13.607, 13.272},
+             {13.262, 13.394},
+             {12.937, 13.353},
+             {12.978, 13.556},
+             {13.038, 13.698},
+             {13.099, 13.881},
+             {13.789, 13.982},
+             {14.296, 13.617},
+             {14.763, 13.272},
+             {14.398, 13.171},
+             {14.357, 13.15},
+             {13.992, 13.049}
+            },
+            {
+             {14.337, 15.402},
+             {14.033, 15.707},
+             {13.424, 16.092},
+             {13.424, 16.092},
+             {13.424, 16.092},
+             {13.302, 16.802},
+             {13.221, 17.066},
+             {13.769, 17.593},
+             {13.85, 17.675},
+             {14.377, 18.182},
+             {14.418, 17.167},
+             {14.398, 16.64},
+             {14.337, 15.402}
+            },
+            CompressedData[
+             "\n1:eJyFlHlIVFEUxieJCon2xUxLx/fezJvXc+bNGCFRfe1l2gpmo7RqSmSbWVFW\nhJktRIs6mRkioRVMuRQiZRZli7ZnC6WRFlE2pe2rWve+O70g//DCMHz3MOee\n8zvfGf+Fy2fGeOh0ulDyod89IoJPX3NYUPKp5f664xz+1y/yDlX47VUQt+9d\n0qhEDu+PXpkyrFLR4mvLc7zNLQriX/06/uEeB/NTrtOWvjZkV/gVrnptaFfX\nr+9zcmK9Gc3k12HPJTQmjRo694zM8vUKxAT60HcZ5HJy1+cW7FpKAitlhHT1\nkFLDbZq+TNLFzbChQVC6OGslfCblNWyzQozac/HLMQmT6EOxVvzctKRsdW8T\nbt4gx6mg/+Nb32YtEnFXX/NjU5UVvvbo4c+6i0jz6hjeTbbB6UMu5hmRuaxX\n8oWQIKhthglYOcLz0ZEVNlZfKQdCbU35bwW5safeJGQEsPh0C35db6y8pPcH\nLd/DJWN/VOvYn7I3q2cijw3J5tD8qv4Ifng5Pkjnh52F9Q0ZH7017dxVE6cr\n8NV0emqKvbp5MAykTR+7gJaviXXZih4DKdgOgXCMJUSGu+e0w4zrueNLPm3k\nQejse1drwZj5L+/oa3gEkHaXJFkZf3+jxjOfjLuw2KjFSZMjPA+I2EywpZVa\nWNxqYvnKzLhKXhldNwSEsjGquwxCb9rutRbQ6qLPiox3tQKKJ8duhJTajxBX\n0ErGIyhGyMWHm44KViSqwA1ttOqHLIXN4wSPFNeM0kEpBtb/EwHHaJtbBFSS\n9N5NAh7QtNt5LU6qm/9yOofF9OQLbp9xmEmyuHoakXWQnAECaLtlQWK7Wt2P\nrxxC1cQi85sPB4rHq6OJ8Y3koEqHidXXgXfXITEfSDy+zyKbtVVivB6588VI\nKEiP2b5oo57dzzZhdmTR+bcj9bDRkyCiLrtn3rkFARhHjS+KzP8Kx/x8w9iu\nvpZ51rG3Sc/8vNOAFfM63xpQpGd9zuHbaJV7vIC3FLuLR3XYQoJAZHuwm2dz\nmiqCrnVGMs98EvFP/92vv5rarN9jE9ubde54QKDmb9VX2RZND1YHLuP2NwJs\nIN/m/+kPQPcZbA==\n        "
+            ]
+           }
+          ]
+         },
+         {FaceForm[RGBColor[0.2, 0.2, 0.2, 1.0]]},
+         StripOnInput -> False
+        ]
+       },
+       ImageSize -> {21, 21},
+       ImagePadding -> 1
       ]
      ])
    }
@@ -6403,6 +6414,52 @@ Notebook[
    }
   ],
   Cell[
+   StyleData["CheckmarkGreen"],
+   TemplateBoxOptions -> {
+    DisplayFunction ->
+     (Function[
+      GraphicsBox[
+       {
+        Thickness[0.0625],
+        StyleBox[
+         {
+          FilledCurveBox[
+           {
+            {
+             {0, 2, 0},
+             {0, 1, 0},
+             {0, 1, 0},
+             {0, 1, 0},
+             {0, 1, 0},
+             {0, 1, 0}
+            }
+           },
+           {
+            {
+             {5.9883, 1.1318},
+             {1.0653, 6.6698},
+             {2.9343, 8.3308},
+             {6.0113, 4.8678},
+             {12.8263, 12.3418},
+             {14.6743, 10.6578},
+             {5.9883, 1.1318}
+            }
+           }
+          ]
+         },
+         {FaceForm[RGBColor[0.0, 0.670588, 0.0117647, 1.0]]},
+         StripOnInput -> False
+        ]
+       },
+       ImageSize -> {16.0, 14.0},
+       PlotRange -> {{0.0, 16.0}, {0.0, 14.0}},
+       AspectRatio -> Automatic,
+       BaselinePosition -> Center -> Center
+      ]
+     ])
+   }
+  ],
+  Cell[
    StyleData["Checkmark"],
    TemplateBoxOptions -> {
     DisplayFunction ->
@@ -7060,6 +7117,97 @@ Notebook[
        ImageSize -> {{14.0, 17.0}, {14.0, 17.0}},
        PlotRange -> {{-0.5, 13.5}, {-0.5, 16.5}},
        AspectRatio -> Automatic
+      ]
+     ])
+   }
+  ],
+  Cell[
+   StyleData["DiscardedMaterial"],
+   TemplateBoxOptions -> {
+    DisplayFunction ->
+     (Function[
+      GraphicsBox[
+       {
+        Thickness[0.066667],
+        FaceForm[
+         {RGBColor[0.53725, 0.53725, 0.53725], Opacity[1.0]}
+        ],
+        FilledCurveBox[
+         {
+          {
+           {1, 4, 3},
+           {0, 1, 0},
+           {1, 3, 3},
+           {0, 1, 0},
+           {1, 3, 3},
+           {0, 1, 0},
+           {1, 3, 3},
+           {0, 1, 0},
+           {0, 1, 0},
+           {1, 3, 3},
+           {0, 1, 0},
+           {1, 3, 3},
+           {0, 1, 0}
+          },
+          {
+           {0, 2, 0},
+           {1, 3, 3},
+           {0, 1, 0},
+           {0, 1, 0},
+           {1, 3, 3},
+           {1, 3, 3},
+           {1, 3, 3},
+           {0, 1, 0},
+           {0, 1, 0},
+           {1, 3, 3},
+           {0, 1, 0},
+           {1, 3, 3},
+           {0, 1, 0},
+           {1, 3, 3}
+          },
+          {
+           {0, 2, 0},
+           {0, 1, 0},
+           {0, 1, 0},
+           {0, 1, 0},
+           {0, 1, 0},
+           {0, 1, 0},
+           {0, 1, 0},
+           {0, 1, 0},
+           {0, 1, 0},
+           {0, 1, 0},
+           {0, 1, 0},
+           {0, 1, 0}
+          }
+         },
+         {
+          CompressedData[
+           "\n1:eJxTTMoPSmViYGCQAmIQDQFaDmCqQdMBxtfdNPf98mOacBqXOgjNBOf7mHc6\nJjxlQJNnQDOHAc0cmHpROH/Z7CMKG4pE0MwTQbNPxGGNTFSK9X1BOD/h6QWl\n2z+F0OSFHbacKNs3X0oYzofIC8H5+ndV2BqnsjoAOf6902Uc3gTukGvNFnbQ\nbhe7ee67jMOMPKHmA6eEHdy2ff57pUIWzT1yqHy4v0TQ/A1TrwX3H2o4iaLy\ngeYAADp3VlE=\n      "
+          ],
+          CompressedData[
+           "\n1:eJxTTMoPSmViYGCQBWIQDQE6DmCqQdMBhc8gCudHWG45UWYn5BDyeOnsIw+0\noOICaPoEHHKf/1758ZIcnK+7ae775W7CDkE75FpfB36y9zHvdEx4KuRw9gwI\nfLAXv3nue3CyEFT9B/s1MlEp1vcF4fyXaoYca+Yg+DxM2u1ikYIOGRPf1tib\nfrCfNRMIJAUdzn8PBrrsg71TwtMLStECDmD69kd7sLv38Tv8AEkf+QLnQ8z7\ngcaH+oeBCc4HG/Pzhz2q/Ad7WHjA+KjhBeXDw+WDPSzcUM2DhTPMPsx4QA1v\nHfziQH0Arfp+zg==\n      "
+          ],
+          {
+           {10.316, 11.109},
+           {8.207, 9.0},
+           {10.316, 6.891},
+           {9.609, 6.184},
+           {7.5, 8.293},
+           {5.391, 6.184},
+           {4.684, 6.891},
+           {6.793, 9.0},
+           {4.684, 11.109},
+           {5.391, 11.816},
+           {7.5, 9.707},
+           {9.609, 11.816},
+           {10.316, 11.109}
+          }
+         }
+        ]
+       },
+       AspectRatio -> Automatic,
+       ImageSize -> {16.0, 16.0},
+       PlotRange -> {{-0.5, 15.5}, {-0.5, 15.5}}
       ]
      ])
    }
@@ -7805,6 +7953,245 @@ Notebook[
        ImageSize -> {{11.0, 17.0}, {11.0, 17.0}},
        BaselinePosition -> Center -> Center,
        PlotRange -> {{-0.5, 10.5}, {-0.5, 16.5}}
+      ]
+     ])
+   }
+  ],
+  Cell[
+   StyleData["llmkit-dialog-sm"],
+   TemplateBoxOptions -> {
+    DisplayFunction ->
+     (Function[
+      GraphicsBox[
+       {
+        Thickness[0.037037],
+        StyleBox[
+         {
+          FilledCurveBox[
+           {
+            {
+             {0, 2, 0},
+             {0, 1, 0},
+             {0, 1, 0},
+             {0, 1, 0},
+             {0, 1, 0},
+             {0, 1, 0},
+             {0, 1, 0},
+             {0, 1, 0},
+             {0, 1, 0},
+             {0, 1, 0},
+             {0, 1, 0},
+             {0, 1, 0},
+             {0, 1, 0},
+             {0, 1, 0},
+             {0, 1, 0},
+             {0, 1, 0},
+             {0, 1, 0},
+             {0, 1, 0},
+             {0, 1, 0},
+             {0, 1, 0},
+             {0, 1, 0}
+            }
+           },
+           CompressedData[
+            "\n1:eJxTTMoPSmVmYGBgBGIxIGZiAIMFZ71UHYB0w+QTZiA6wfOuKIh+8ZPPEkQ7\nHJORANFHPucag2iGSwwP7IFUxi5LI7B8AZ8giD5whEEHWX7B9D5lZP0H5FQV\nkc1nsOtiB9ITe72g9m+6KwKiDSYwaIPlA8yvgszxWBZlAJZfcwcs71DZYQqW\nV20D6WeYcPuHCYheMFUZbP4EtgYrsDqOHrD9AoV7wP5q2PFPG1n+QJGFEYr+\ntzlg/13YBTHfxxTi/wvPwfZHPTl3HGwOR9d/LbD5causkfkPlFaD+SjhCQBg\nhVci\n       "
+           ]
+          ]
+         },
+         {FaceForm[RGBColor[0.866667, 0.0666667, 0.0, 1.0]]},
+         StripOnInput -> False
+        ],
+        StyleBox[
+         {
+          FilledCurveBox[
+           {
+            {{0, 2, 0}, {0, 1, 0}, {0, 1, 0}, {0, 1, 0}},
+            {{0, 2, 0}, {0, 1, 0}, {0, 1, 0}, {0, 1, 0}},
+            {{0, 2, 0}, {0, 1, 0}, {0, 1, 0}, {0, 1, 0}},
+            {{0, 2, 0}, {0, 1, 0}, {0, 1, 0}, {0, 1, 0}},
+            {{0, 2, 0}, {0, 1, 0}, {0, 1, 0}, {0, 1, 0}},
+            {{0, 2, 0}, {0, 1, 0}, {0, 1, 0}, {0, 1, 0}},
+            {
+             {0, 2, 0},
+             {0, 1, 0},
+             {0, 1, 0},
+             {0, 1, 0},
+             {0, 1, 0},
+             {0, 1, 0},
+             {0, 1, 0}
+            }
+           },
+           {
+            {
+             {18.0, 16.0},
+             {14.0, 16.0},
+             {14.0, 17.0},
+             {18.0, 17.0},
+             {18.0, 16.0}
+            },
+            {
+             {18.0, 14.0},
+             {17.0, 14.0},
+             {17.0, 15.0},
+             {18.0, 15.0},
+             {18.0, 14.0}
+            },
+            {
+             {16.0, 14.0},
+             {11.0, 14.0},
+             {11.0, 15.0},
+             {16.0, 15.0},
+             {16.0, 14.0}
+            },
+            {
+             {13.0, 12.0},
+             {9.0, 12.0},
+             {9.0, 13.0},
+             {13.0, 13.0},
+             {13.0, 12.0}
+            },
+            {
+             {9.0, 15.0},
+             {10.0, 15.0},
+             {10.0, 14.0},
+             {9.0, 14.0},
+             {9.0, 15.0}
+            },
+            {
+             {9.0, 17.0},
+             {13.0, 17.0},
+             {13.0, 16.0},
+             {9.0, 16.0},
+             {9.0, 17.0}
+            },
+            {
+             {7.0, 19.0},
+             {7.0, 10.0},
+             {9.0, 10.0},
+             {9.0, 7.0},
+             {13.0, 10.0},
+             {20.0, 10.0},
+             {20.0, 19.0},
+             {7.0, 19.0}
+            }
+           }
+          ]
+         },
+         {FaceForm[RGBColor[1.0, 1.0, 1.0, 1.0]]},
+         StripOnInput -> False
+        ],
+        StyleBox[
+         {
+          FilledCurveBox[
+           {{{0, 2, 0}, {0, 1, 0}, {0, 1, 0}, {0, 1, 0}}},
+           {
+            {
+             {9.0, 14.0},
+             {10.0, 14.0},
+             {10.0, 15.0},
+             {9.0, 15.0},
+             {9.0, 14.0}
+            }
+           }
+          ]
+         },
+         {FaceForm[RGBColor[0.866667, 0.0666667, 0.0, 1.0]]},
+         StripOnInput -> False
+        ],
+        StyleBox[
+         {
+          FilledCurveBox[
+           {{{0, 2, 0}, {0, 1, 0}, {0, 1, 0}, {0, 1, 0}}},
+           {
+            {
+             {9.0, 16.0},
+             {13.0, 16.0},
+             {13.0, 17.0},
+             {9.0, 17.0},
+             {9.0, 16.0}
+            }
+           }
+          ]
+         },
+         {FaceForm[RGBColor[0.866667, 0.0666667, 0.0, 1.0]]},
+         StripOnInput -> False
+        ],
+        StyleBox[
+         {
+          FilledCurveBox[
+           {{{0, 2, 0}, {0, 1, 0}, {0, 1, 0}, {0, 1, 0}}},
+           {
+            {
+             {9.0, 12.0},
+             {13.0, 12.0},
+             {13.0, 13.0},
+             {9.0, 13.0},
+             {9.0, 12.0}
+            }
+           }
+          ]
+         },
+         {FaceForm[RGBColor[0.866667, 0.0666667, 0.0, 1.0]]},
+         StripOnInput -> False
+        ],
+        StyleBox[
+         {
+          FilledCurveBox[
+           {{{0, 2, 0}, {0, 1, 0}, {0, 1, 0}, {0, 1, 0}}},
+           {
+            {
+             {11.0, 14.0},
+             {16.0, 14.0},
+             {16.0, 15.0},
+             {11.0, 15.0},
+             {11.0, 14.0}
+            }
+           }
+          ]
+         },
+         {FaceForm[RGBColor[0.866667, 0.0666667, 0.0, 1.0]]},
+         StripOnInput -> False
+        ],
+        StyleBox[
+         {
+          FilledCurveBox[
+           {{{0, 2, 0}, {0, 1, 0}, {0, 1, 0}, {0, 1, 0}}},
+           {
+            {
+             {14.0, 16.0},
+             {18.0, 16.0},
+             {18.0, 17.0},
+             {14.0, 17.0},
+             {14.0, 16.0}
+            }
+           }
+          ]
+         },
+         {FaceForm[RGBColor[0.866667, 0.0666667, 0.0, 1.0]]},
+         StripOnInput -> False
+        ],
+        StyleBox[
+         {
+          FilledCurveBox[
+           {{{0, 2, 0}, {0, 1, 0}, {0, 1, 0}, {0, 1, 0}}},
+           {
+            {
+             {17.0, 14.0},
+             {18.0, 14.0},
+             {18.0, 15.0},
+             {17.0, 15.0},
+             {17.0, 14.0}
+            }
+           }
+          ]
+         },
+         {FaceForm[RGBColor[0.866667, 0.0666667, 0.0, 1.0]]},
+         StripOnInput -> False
+        ]
+       },
+       ImageSize -> {27.0, 28.0},
+       PlotRange -> {{0.0, 27.0}, {0.0, 28.0}},
+       AspectRatio -> Automatic
       ]
      ])
    }
@@ -11719,6 +12106,182 @@ Notebook[
    }
   ],
   Cell[
+   StyleData["SendChatButtonLabel"],
+   TemplateBoxOptions -> {
+    DisplayFunction ->
+     (Function[
+      TagBox[
+       PaneSelectorBox[
+        {
+         False ->
+          FrameBox[
+           GraphicsBox[
+            {
+             Thickness[0.055556],
+             FaceForm[#1],
+             FilledCurveBox[
+              {
+               {
+                {0, 2, 0},
+                {1, 3, 3},
+                {0, 1, 0},
+                {1, 3, 3},
+                {0, 1, 0},
+                {1, 3, 3},
+                {1, 3, 3},
+                {0, 1, 0},
+                {1, 3, 3},
+                {0, 1, 0},
+                {1, 3, 3},
+                {0, 1, 0},
+                {1, 3, 3}
+               }
+              },
+              CompressedData[
+               "\n1:eJxTTMoPSmVmYGBgBGIZIGYC4i9/r1S8ZDNwKM6Y+Lbmv67DvcntrVGX/9lL\n699VYWPUdXiwj2+O8aIP9t05z3+v/Kjj8Dsm9+i/TY/tN819v/zYaS0HweO7\ndvSyfbHfUzJZgmWapsOWyK87b3UJOjwRkT35dL6yQ+2FzUARIQcrZa/qZn5l\nh1VNgZ5zG0Qcpm3iKVzzWsnh/gPuySuZxBz2PgZqcFV2WPsLaIGdksPNc9+D\nHy9Vc7CadLreY7+SQ75Q84FTD9Ucdv5p/3I7XNmh8qWaIccaNQcTQTObvZOU\nHYC2h/HpqjnY7A2apnhO2WGd+8MqkXWqDt/Z4mf4TFV2uL64wJZLXNUhM/9D\n60kRZQenhKcXlG6rOEScMjqycZ24w4y7QI9XKToo5VRULdURc/jn/OvtawVF\nB6Y9rEIi9qIOlRErTM9GKzhsa6kB+kjUoWXe2VXnReUdNjA/79HIFXOQmHqF\nM2MRt4Pv577gkiViDo/NpA5EL2Bx0M9bzLiHVdrhUNvy8FObGB1AofM3VdaB\nKwNo0y82B1W2xqnOpw0cQMFvv1UL4s9EQwdg6DdOZdZx8AB547mBQ/+hrxox\n/HoO6PEFAPo2ybM=\n          "
+              ]
+             ]
+            },
+            AspectRatio -> Automatic,
+            ImageSize -> #3,
+            PlotRange -> {{-0.5, 18.5}, {-0.5, 18.5}}
+           ],
+           FrameStyle -> GrayLevel[1],
+           Background -> GrayLevel[1],
+           RoundingRadius -> 3,
+           FrameMargins -> 1,
+           StripOnInput -> False
+          ],
+         True ->
+          FrameBox[
+           GraphicsBox[
+            {
+             Thickness[0.055556],
+             FaceForm[#1],
+             FilledCurveBox[
+              {
+               {
+                {0, 2, 0},
+                {1, 3, 3},
+                {0, 1, 0},
+                {1, 3, 3},
+                {0, 1, 0},
+                {1, 3, 3},
+                {1, 3, 3},
+                {0, 1, 0},
+                {1, 3, 3},
+                {0, 1, 0},
+                {1, 3, 3},
+                {0, 1, 0},
+                {1, 3, 3}
+               }
+              },
+              CompressedData[
+               "\n1:eJxTTMoPSmVmYGBgBGIZIGYC4i9/r1S8ZDNwKM6Y+Lbmv67DvcntrVGX/9lL\n699VYWPUdXiwj2+O8aIP9t05z3+v/Kjj8Dsm9+i/TY/tN819v/zYaS0HweO7\ndvSyfbHfUzJZgmWapsOWyK87b3UJOjwRkT35dL6yQ+2FzUARIQcrZa/qZn5l\nh1VNgZ5zG0Qcpm3iKVzzWsnh/gPuySuZxBz2PgZqcFV2WPsLaIGdksPNc9+D\nHy9Vc7CadLreY7+SQ75Q84FTD9Ucdv5p/3I7XNmh8qWaIccaNQcTQTObvZOU\nHYC2h/HpqjnY7A2apnhO2WGd+8MqkXWqDt/Z4mf4TFV2uL64wJZLXNUhM/9D\n60kRZQenhKcXlG6rOEScMjqycZ24w4y7QI9XKToo5VRULdURc/jn/OvtawVF\nB6Y9rEIi9qIOlRErTM9GKzhsa6kB+kjUoWXe2VXnReUdNjA/79HIFXOQmHqF\nM2MRt4Pv577gkiViDo/NpA5EL2Bx0M9bzLiHVdrhUNvy8FObGB1AofM3VdaB\nKwNo0y82B1W2xqnOpw0cQMFvv1UL4s9EQwdg6DdOZdZx8AB547mBQ/+hrxox\n/HoO6PEFAPo2ybM=\n          "
+              ]
+             ]
+            },
+            AspectRatio -> Automatic,
+            ImageSize -> #3,
+            PlotRange -> {{-0.5, 18.5}, {-0.5, 18.5}}
+           ],
+           FrameStyle -> #1,
+           Background -> #2,
+           RoundingRadius -> 3,
+           FrameMargins -> 1,
+           StripOnInput -> False
+          ]
+        },
+        Dynamic[CurrentValue["MouseOver"]],
+        ImageSize -> Automatic,
+        FrameMargins -> 0
+       ],
+       MouseAppearanceTag["LinkHand"]
+      ]
+     ])
+   }
+  ],
+  Cell[
+   StyleData["SendChatButton"],
+   TemplateBoxOptions -> {
+    DisplayFunction ->
+     (Function[
+      DynamicModuleBox[
+       {Wolfram`ChatNB`cell$$},
+       PaneSelectorBox[
+        {
+         False ->
+          ButtonBox[
+           TemplateBox[{#1, #2, #3}, "SendChatButtonLabel"],
+           ButtonFunction :>
+            (
+            Wolfram`Chatbook`$ChatEvaluationCell = 
+             Wolfram`ChatNB`cell$$;
+
+            SelectionMove[Wolfram`ChatNB`cell$$, All, Cell];
+            FrontEndTokenExecute[
+             Notebooks[Wolfram`ChatNB`cell$$],
+             "EvaluateCells"
+            ]),
+           Appearance ->
+            FEPrivate`FrontEndResource[
+             "FEExpressions",
+             "SuppressMouseDownNinePatchAppearance"
+            ],
+           FrameMargins -> 0,
+           Method -> "Queued",
+           Evaluator -> Automatic
+          ],
+         True ->
+          ButtonBox[
+           TemplateBox[{#1, #2, #3}, "StopChatButtonLabel"],
+           ButtonFunction :>
+            If[ UnsameQ[
+              Wolfram`Chatbook`$ChatEvaluationCell,
+              Wolfram`ChatNB`cell$$
+             ],
+             NotebookWrite[
+              Wolfram`ChatNB`cell$$,
+              NotebookRead[Wolfram`ChatNB`cell$$],
+              None,
+              AutoScroll -> False
+             ],
+             Needs["Wolfram`Chatbook`" -> None];
+             Symbol["Wolfram`Chatbook`ChatbookAction"]["StopChat"]
+            ],
+           Appearance ->
+            FEPrivate`FrontEndResource[
+             "FEExpressions",
+             "SuppressMouseDownNinePatchAppearance"
+            ],
+           FrameMargins -> 0,
+           Evaluator -> Automatic,
+           Method -> "Preemptive"
+          ]
+        },
+        Dynamic[
+         SameQ[
+          Wolfram`Chatbook`$ChatEvaluationCell,
+          Wolfram`ChatNB`cell$$
+         ]
+        ],
+        Alignment -> {Automatic, Baseline},
+        ImageSize -> Automatic
+       ],
+       Initialization :>
+        (Wolfram`ChatNB`cell$$ = 
+         If[ $CloudEvaluation,
+          Wolfram`ChatNB`x;
+          EvaluationCell[],
+          ParentCell[EvaluationCell[]]
+         ]),
+       DynamicModuleValues :> { },
+       UnsavedVariables :> {Wolfram`ChatNB`cell$$}
+      ]
+     ])
+   }
+  ],
+  Cell[
    StyleData["ServiceIconAnthropic"],
    TemplateBoxOptions -> {
     DisplayFunction ->
@@ -12233,6 +12796,68 @@ Notebook[
        AspectRatio -> Automatic,
        ImageSize -> {{21.0, 21.0}, {21.0, 21.0}},
        PlotRange -> {{-0.5, 20.5}, {-0.5, 20.5}}
+      ]
+     ])
+   }
+  ],
+  Cell[
+   StyleData["StopChatButtonLabel"],
+   TemplateBoxOptions -> {
+    DisplayFunction ->
+     (Function[
+      TagBox[
+       PaneSelectorBox[
+        {
+         False ->
+          FrameBox[
+           OverlayBox[
+            {
+             TemplateBox[{#3}, "ChatEvaluatingSpinner"],
+             GraphicsBox[
+              {
+               RGBColor[0.71373, 0.054902, 0.0],
+               RectangleBox[{-0.5, -0.5}, {0.5, 0.5}]
+              },
+              ImageSize -> #3,
+              PlotRange -> 1.1
+             ]
+            },
+            Alignment -> {Center, Center}
+           ],
+           FrameStyle -> GrayLevel[1],
+           Background -> GrayLevel[1],
+           RoundingRadius -> 3,
+           FrameMargins -> 1,
+           StripOnInput -> False
+          ],
+         True ->
+          FrameBox[
+           OverlayBox[
+            {
+             TemplateBox[{#3}, "ChatEvaluatingSpinner"],
+             GraphicsBox[
+              {
+               RGBColor[0.71373, 0.054902, 0.0],
+               RectangleBox[{-0.5, -0.5}, {0.5, 0.5}]
+              },
+              ImageSize -> #3,
+              PlotRange -> 1.1
+             ]
+            },
+            Alignment -> {Center, Center}
+           ],
+           FrameStyle -> #1,
+           Background -> #2,
+           RoundingRadius -> 3,
+           FrameMargins -> 1,
+           StripOnInput -> False
+          ]
+        },
+        Dynamic[CurrentValue["MouseOver"]],
+        ImageSize -> Automatic,
+        FrameMargins -> 0
+       ],
+       MouseAppearanceTag["LinkHand"]
       ]
      ])
    }
@@ -17086,6 +17711,411 @@ Notebook[
    }
   ],
   Cell[
+   StyleData["WorkspaceDefaultUserIcon"],
+   TemplateBoxOptions -> {
+    DisplayFunction ->
+     (Function[
+      GraphicsBox[
+       {
+        Thickness[0.05],
+        StyleBox[
+         {
+          FilledCurveBox[
+           {{{1, 4, 3}, {1, 3, 3}, {1, 3, 3}, {1, 3, 3}}},
+           {
+            {
+             {10.0, 1.0},
+             {14.971, 1.0},
+             {19.0, 5.0294},
+             {19.0, 10.0},
+             {19.0, 14.971},
+             {14.971, 19.0},
+             {10.0, 19.0},
+             {5.0294, 19.0},
+             {1.0, 14.971},
+             {1.0, 10.0},
+             {1.0, 5.0294},
+             {5.0294, 1.0},
+             {10.0, 1.0}
+            }
+           }
+          ]
+         },
+         {FaceForm[RGBColor[0.83922, 0.92157, 0.96471, 1.0]]},
+         StripOnInput -> False
+        ],
+        StyleBox[
+         {
+          FilledCurveBox[
+           {
+            {
+             {1, 4, 3},
+             {1, 3, 3},
+             {1, 3, 3},
+             {1, 3, 3},
+             {1, 3, 3},
+             {1, 3, 3},
+             {1, 3, 3},
+             {1, 3, 3}
+            },
+            {{1, 4, 3}, {1, 3, 3}, {1, 3, 3}, {1, 3, 3}}
+           },
+           {
+            CompressedData[
+             "\n1:eJxTTMoPSmViYGCQBGIQzczZJZ+cx+4Ao3U3zX2/vE3YYd22pPqbtu/ts3w/\n9wV/kXFgQAEqcL5Q84FTC1s14Xzl2z/rsmz04PolWcL4dIUM4eYvkNK/q8Jm\n7OA5t0HtENAeiC4TB1R7TBxQ7TFxgNkD0w+zB2Y+jIaJw9Shug/TXHR7Yf6H\n6Ye5G2b+JHuJindAf8HswRUO6OEEswemH+Z/9PAHANj3ah8=\n        "
+            ],
+            {
+             {19.0, 10.0},
+             {19.0, 5.0294},
+             {14.971, 1.0},
+             {10.0, 1.0},
+             {5.0294, 1.0},
+             {1.0, 5.0294},
+             {1.0, 10.0},
+             {1.0, 14.971},
+             {5.0294, 19.0},
+             {10.0, 19.0},
+             {14.971, 19.0},
+             {19.0, 14.971},
+             {19.0, 10.0}
+            }
+           }
+          ]
+         },
+         {FaceForm[RGBColor[0.4, 0.67843, 0.82353, 1.0]]},
+         StripOnInput -> False
+        ],
+        StyleBox[
+         {
+          FilledCurveBox[
+           {
+            {
+             {1, 4, 3},
+             {1, 3, 3},
+             {1, 3, 3},
+             {1, 3, 3},
+             {1, 3, 3},
+             {0, 1, 0},
+             {1, 3, 3},
+             {1, 3, 3},
+             {1, 3, 3},
+             {1, 3, 3},
+             {1, 3, 3},
+             {0, 1, 0}
+            }
+           },
+           CompressedData[
+            "\n1:eJxTTMoPSmVmYGBgBGJFIGYC4hl5Qs0HuvQcGMDgwf6oFOv7/roGcH5xxsS3\nNfcNHHgf6E5Y8OOmPccamaiU3QYOKjv/tH+5/cX+asVLNcMOAwfurcsqj69k\nceDT3TT3PbuBQ+7z3ys/Cgk6BO2Qa309UdfBYLc6P/dWYYfHS2cfUfig5aB8\n+2ddVo2YQ6djwtMLj9QdvrPFz/CZiuA/s19yf5+ftMNRhQ1FGRM1HPTvqrA1\niio6HP6qEdPfpOUwayYQ3FR0uO/fOz1PSNuBrXGqc7eOOkRdqLaDZkz/oa8r\nNB3+rPx4yVdJE+ofA4cVx7zNOxlV4PzTC123fb6rDOd/f5K48NoWKTj/WK5J\nw3YGCYcQkMMfaDr4ivZ4vToiAfFnurrDnmkT+Ku+STl8uuSbJBCh4LDC9Ky1\n30Q5h9p125LqLRUdJlsx+rb0yjs0PTo+Y/c0aTh//ZTUjuS7Yg7P1qk+ab4n\n6bDvoLha8FExh0v58eznZopA3PVX2KE50HNugxq/gxcPk3Z7mKADw8S631YF\n3A5zFikDY4DFgdtNtZRJisshABQMzV/sz7w7edhJl9MBHG/2N+2BtvH6r+eD\nxyc4nl4Kwfno8Q8ARrPSLw==\n       "
+           ]
+          ]
+         },
+         {
+          EdgeForm[CapForm["Round"]],
+          EdgeForm[JoinForm["Round"]],
+          EdgeForm[Thickness[0.05625]],
+          EdgeForm[RGBColor[0.4, 0.67843, 0.82353, 1.0]],
+          FaceForm[RGBColor[1.0, 1.0, 1.0, 1.0]]
+         },
+         StripOnInput -> False
+        ]
+       },
+       ImageSize -> {Automatic, 20}
+      ]
+     ])
+   }
+  ],
+  Cell[
+   StyleData["WorkspaceToolbarIconHistory"],
+   TemplateBoxOptions -> {
+    DisplayFunction ->
+     (Function[
+      GraphicsBox[
+       {
+        Thickness[0.05],
+        StyleBox[
+         {
+          FilledCurveBox[
+           {
+            {{0, 2, 0}, {0, 1, 0}, {0, 1, 0}, {0, 1, 0}},
+            {{0, 2, 0}, {0, 1, 0}, {0, 1, 0}, {0, 1, 0}},
+            {{0, 2, 0}, {0, 1, 0}, {0, 1, 0}, {0, 1, 0}}
+           },
+           {
+            {
+             {4.0, 13.0},
+             {16.0, 13.0},
+             {16.0, 15.0},
+             {4.0, 15.0},
+             {4.0, 13.0}
+            },
+            {
+             {4.0, 8.9882},
+             {16.0, 8.9882},
+             {16.0, 10.989},
+             {4.0, 10.989},
+             {4.0, 8.9882}
+            },
+            {
+             {4.0, 5.0},
+             {16.0, 5.0},
+             {16.0, 7.0},
+             {4.0, 7.0},
+             {4.0, 5.0}
+            }
+           }
+          ]
+         },
+         {FaceForm[RGBColor[1.0, 1.0, 1.0, 1.0]]},
+         StripOnInput -> False
+        ]
+       },
+       ImageSize -> {20.0, 20.0},
+       PlotRange -> {{0.0, 20.0}, {0.0, 20.0}},
+       AspectRatio -> Automatic
+      ]
+     ])
+   }
+  ],
+  Cell[
+   StyleData["WorkspaceToolbarIconNew"],
+   TemplateBoxOptions -> {
+    DisplayFunction ->
+     (Function[
+      GraphicsBox[
+       {
+        Thickness[0.058824],
+        StyleBox[
+         {
+          FilledCurveBox[
+           {
+            {
+             {0, 2, 0},
+             {0, 1, 0},
+             {0, 1, 0},
+             {0, 1, 0},
+             {0, 1, 0},
+             {0, 1, 0},
+             {0, 1, 0},
+             {0, 1, 0},
+             {0, 1, 0},
+             {0, 1, 0},
+             {0, 1, 0},
+             {0, 1, 0}
+            },
+            {
+             {0, 2, 0},
+             {0, 1, 0},
+             {0, 1, 0},
+             {0, 1, 0},
+             {0, 1, 0},
+             {0, 1, 0},
+             {1, 3, 3},
+             {0, 1, 0},
+             {1, 3, 3},
+             {0, 1, 0},
+             {1, 3, 3},
+             {0, 1, 0},
+             {0, 1, 0},
+             {0, 1, 0},
+             {0, 1, 0},
+             {0, 1, 0},
+             {0, 1, 0},
+             {0, 1, 0},
+             {0, 1, 0}
+            }
+           },
+           {
+            {
+             {14.0, 5.0},
+             {14.0, 8.0},
+             {12.0, 8.0},
+             {12.0, 5.0},
+             {9.0, 5.0},
+             {9.0, 3.0},
+             {12.0, 3.0},
+             {12.0, 0.0},
+             {14.0, 0.0},
+             {14.0, 3.0},
+             {17.0, 3.0},
+             {17.0, 5.0},
+             {14.0, 5.0}
+            },
+            CompressedData[
+             "\n1:eJxTTMoPSmViYGCQAmIQnWJ9379XXMqBAQxEoLQCDr6Aw6+6rD0lwtJwPoTm\ngNIf7FH5Ag4+5p2OCU9f2MP4Qs0HTi10vWaPqp+BAawuVRDOf6lmyLFGRhjO\n7855/ntloRacD+R9vOSrjWaeDpp9Og6o+nQcYPpgfFzi6PogtBKU1sLBh9Gw\ncEDnizg8rBJZ5/6Q3wE7n8MBPT4AEYFQVA==\n        "
+            ]
+           }
+          ]
+         },
+         {FaceForm[RGBColor[1.0, 1.0, 1.0, 1.0]]},
+         StripOnInput -> False
+        ]
+       },
+       ImageSize -> {17.0, 14.0},
+       PlotRange -> {{0.0, 17.0}, {0.0, 14.0}},
+       AspectRatio -> Automatic
+      ]
+     ])
+   }
+  ],
+  Cell[
+   StyleData["WorkspaceToolbarIconSources"],
+   TemplateBoxOptions -> {
+    DisplayFunction ->
+     (Function[
+      GraphicsBox[
+       {
+        Thickness[0.014493],
+        StyleBox[
+         {
+          FilledCurveBox[
+           {
+            {
+             {0, 2, 0},
+             {0, 1, 0},
+             {0, 1, 0},
+             {0, 1, 0},
+             {1, 3, 3},
+             {0, 1, 0},
+             {0, 1, 0}
+            },
+            {{0, 2, 0}, {0, 1, 0}, {1, 3, 3}, {0, 1, 0}},
+            {
+             {0, 2, 0},
+             {1, 3, 3},
+             {1, 3, 3},
+             {0, 1, 0},
+             {1, 3, 3},
+             {0, 1, 0},
+             {1, 3, 3},
+             {0, 1, 0},
+             {1, 3, 3},
+             {0, 1, 0},
+             {1, 3, 3},
+             {1, 3, 3}
+            }
+           },
+           {
+            {
+             {15.0, 5.0},
+             {7.0, 5.0},
+             {7.0, 15.0},
+             {11.0, 15.0},
+             {11.0, 12.5},
+             {11.0, 11.673},
+             {11.673, 11.0},
+             {12.5, 11.0},
+             {15.0, 11.0},
+             {15.0, 5.0}
+            },
+            {
+             {12.0, 14.293},
+             {14.293, 12.0},
+             {12.5, 12.0},
+             {12.225, 12.0},
+             {12.0, 12.224},
+             {12.0, 12.5},
+             {12.0, 14.293}
+            },
+            CompressedData[
+             "\n1:eJxTTMoPSmViYGCQBmIQfftnXdaeLfoOGRPf1thvVYfTMHGWMD7dTXPVHexN\n43Z5ntF3kNa/q8LWqO6wRiYqxfq+vkO+UPOBU4nqDpUv1Qw53ug7HP6qEdPv\npO5w2TdJIOKnvsPDKpF17orqDgxgYACl0fkycP6MPJCBkmjyEg7qhhxrZKT0\n4XwIrYfGF4HzN819v/zYaUE08wTQ7IPx9eD8LSfK9s2H2wOTN4Cbh+ouETQ+\nwl8wf8PCARYusHCChRssHGHhCgtnWLijxw8A7jBvnA==\n        "
+            ]
+           }
+          ]
+         },
+         {FaceForm[RGBColor[1.0, 1.0, 1.0, 1.0]]},
+         StripOnInput -> False
+        ],
+        StyleBox[
+         {
+          FilledCurveBox[
+           {
+            {
+             {0, 2, 0},
+             {0, 1, 0},
+             {0, 1, 0},
+             {0, 1, 0},
+             {0, 1, 0},
+             {0, 1, 0},
+             {0, 1, 0},
+             {0, 1, 0},
+             {0, 1, 0},
+             {0, 1, 0},
+             {0, 1, 0},
+             {0, 1, 0}
+            }
+           },
+           {
+            {
+             {16.0, 9.0},
+             {16.0, 12.0},
+             {14.0, 12.0},
+             {14.0, 9.0},
+             {11.0, 9.0},
+             {11.0, 7.0},
+             {14.0, 7.0},
+             {14.0, 4.0},
+             {16.0, 4.0},
+             {16.0, 7.0},
+             {19.0, 7.0},
+             {19.0, 9.0},
+             {16.0, 9.0}
+            }
+           }
+          ]
+         },
+         {FaceForm[RGBColor[1.0, 1.0, 1.0, 1.0]]},
+         StripOnInput -> False
+        ],
+        StyleBox[
+         {
+          FilledCurveBox[
+           {
+            {
+             {0, 2, 0},
+             {0, 1, 0},
+             {0, 1, 0},
+             {0, 1, 0},
+             {0, 1, 0},
+             {0, 1, 0},
+             {0, 1, 0},
+             {0, 1, 0},
+             {0, 1, 0},
+             {0, 1, 0},
+             {0, 1, 0},
+             {0, 1, 0}
+            },
+            {
+             {0, 2, 0},
+             {0, 1, 0},
+             {0, 1, 0},
+             {0, 1, 0},
+             {0, 1, 0},
+             {0, 1, 0},
+             {0, 1, 0},
+             {0, 1, 0},
+             {0, 1, 0},
+             {0, 1, 0},
+             {0, 1, 0},
+             {0, 1, 0}
+            }
+           },
+           CompressedData[
+            "\n1:eJxTTMoPSmVmYGBgAmJeKA0BBg4QWglKG+PgyzigqkfnC0BpHRx8mHo1HHwl\nNPXofA00+9D5MPVaUFoFjQ+jDXHwYepNcPAl0NSj8znQzEXnw9Sr4OCju1fF\nAQCgQRZY\n       "
+           ]
+          ]
+         },
+         {FaceForm[RGBColor[0.4, 0.67843, 0.82353, 1.0]]},
+         StripOnInput -> False
+        ]
+       },
+       ImageSize -> {20.0, 20.0},
+       PlotRange -> {{0.0, 20.0}, {0.0, 20.0}},
+       AspectRatio -> Automatic
+      ]
+     ])
+   }
+  ],
+  Cell[
    StyleData["WrenchIcon"],
    TemplateBoxOptions -> {
     DisplayFunction ->
@@ -17400,6 +18430,267 @@ Notebook[
    }
   ],
   Cell[
+   StyleData[
+    "MessageAuthorLabel",
+    StyleDefinitions -> StyleData["Text"]
+   ],
+   ShowStringCharacters -> False,
+   FontSize -> 14,
+   FontWeight -> "DemiBold"
+  ],
+  Cell[
+   StyleData["UserMessageLabel"],
+   TemplateBoxOptions -> {
+    DisplayFunction ->
+     (Function[
+      PaneBox[
+       #1,
+       BaseStyle -> {"MessageAuthorLabel"},
+       ImageSize -> {Scaled[1], Automatic},
+       Alignment -> Right,
+       FrameMargins -> {{0, 11}, {0, 0}}
+      ]
+     ])
+   }
+  ],
+  Cell[
+   StyleData["AssistantMessageLabel"],
+   TemplateBoxOptions -> {
+    DisplayFunction ->
+     (Function[
+      PaneBox[
+       #1,
+       BaseStyle -> {"MessageAuthorLabel"},
+       ImageSize -> {Scaled[1], Automatic},
+       Alignment -> Left,
+       FrameMargins -> {{11, 0}, {0, 0}}
+      ]
+     ])
+   }
+  ],
+  Cell[
+   StyleData["UserMessageBox"],
+   TemplateBoxOptions -> {
+    DisplayFunction ->
+     (Function[
+      PaneBox[
+       FrameBox[
+        #1,
+        BaseStyle -> {"Text", Editable -> False, Selectable -> False},
+        Background -> RGBColor[0.929412, 0.956863, 0.988235],
+        FrameMargins -> 8,
+        FrameStyle -> RGBColor[0.639216, 0.788235, 0.94902],
+        RoundingRadius -> 10,
+        StripOnInput -> False
+       ],
+       Alignment -> Right,
+       ImageSize -> {Full, Automatic}
+      ]
+     ])
+   }
+  ],
+  Cell[
+   StyleData["AssistantMessageBox"],
+   TemplateBoxOptions -> {
+    DisplayFunction ->
+     (Function[
+      TagBox[
+       FrameBox[
+        #1,
+        BaseStyle -> {"Text", Editable -> False, Selectable -> False},
+        Background -> RGBColor[0.988235, 0.992157, 1.0],
+        FrameMargins -> 8,
+        FrameStyle -> RGBColor[0.788235, 0.8, 0.815686],
+        ImageSize -> {Scaled[1], Automatic},
+        RoundingRadius -> 10,
+        StripOnInput -> False
+       ],
+       EventHandlerTag[
+        {
+         "MouseEntered" :>
+          With[ { Wolfram`ChatNB`cell = EvaluationCell[] },
+           Quiet[Needs["Wolfram`Chatbook`" -> None]];
+           Symbol["Wolfram`Chatbook`ChatbookAction"][
+            "AttachAssistantMessageButtons",
+            Wolfram`ChatNB`cell
+           ]
+          ],
+         Method -> "Preemptive",
+         PassEventsDown -> Automatic,
+         PassEventsUp -> True
+        }
+       ]
+      ]
+     ])
+   }
+  ],
+  Cell[
+   StyleData["FeedbackButtonsHorizontal"],
+   TemplateBoxOptions -> {
+    DisplayFunction ->
+     (Function[
+      TagBox[
+       GridBox[
+        {
+         {
+          ButtonBox[
+           TagBox[
+            TagBox[
+             TooltipBox[
+              PaneSelectorBox[
+               {
+                False -> TemplateBox[{}, "ThumbsUpInactive"],
+                True -> TemplateBox[{}, "ThumbsUpActive"]
+               },
+               Dynamic[CurrentValue["MouseOver"]],
+               ImageSize -> Automatic,
+               FrameMargins -> 0
+              ],
+              DynamicBox[
+               ToBoxes[
+                FEPrivate`FrontEndResource[
+                 "ChatbookStrings",
+                 "StylesheetFeedbackButtonTooltip"
+                ],
+                StandardForm
+               ]
+              ]
+             ],
+             Function[
+              Annotation[
+               #1,
+               Dynamic[
+                FEPrivate`FrontEndResource[
+                 "ChatbookStrings",
+                 "StylesheetFeedbackButtonTooltip"
+                ]
+               ],
+               "Tooltip"
+              ]
+             ]
+            ],
+            MouseAppearanceTag["LinkHand"]
+           ],
+           ButtonFunction :>
+            With[ { Wolfram`ChatNB`cell$ = EvaluationCell[] },
+             Quiet[Needs["Wolfram`Chatbook`" -> None]];
+             Catch[
+              Symbol["Wolfram`Chatbook`ChatbookAction"][
+               "SendFeedback",
+               Wolfram`ChatNB`cell$,
+               True
+              ],
+              Blank[]
+             ]
+            ],
+           Appearance ->
+            Dynamic[
+             FEPrivate`FrontEndResource[
+              "FEExpressions",
+              "SuppressMouseDownNinePatchAppearance"
+             ]
+            ],
+           Evaluator -> Automatic,
+           Method -> "Preemptive"
+          ],
+          ButtonBox[
+           TagBox[
+            TagBox[
+             TooltipBox[
+              PaneSelectorBox[
+               {
+                False -> TemplateBox[{}, "ThumbsDownInactive"],
+                True -> TemplateBox[{}, "ThumbsDownActive"]
+               },
+               Dynamic[CurrentValue["MouseOver"]],
+               ImageSize -> Automatic,
+               FrameMargins -> 0
+              ],
+              DynamicBox[
+               ToBoxes[
+                FEPrivate`FrontEndResource[
+                 "ChatbookStrings",
+                 "StylesheetFeedbackButtonTooltip"
+                ],
+                StandardForm
+               ]
+              ]
+             ],
+             Function[
+              Annotation[
+               #1,
+               Dynamic[
+                FEPrivate`FrontEndResource[
+                 "ChatbookStrings",
+                 "StylesheetFeedbackButtonTooltip"
+                ]
+               ],
+               "Tooltip"
+              ]
+             ]
+            ],
+            MouseAppearanceTag["LinkHand"]
+           ],
+           ButtonFunction :>
+            With[ { Wolfram`ChatNB`cell$ = EvaluationCell[] },
+             Quiet[Needs["Wolfram`Chatbook`" -> None]];
+             Catch[
+              Symbol["Wolfram`Chatbook`ChatbookAction"][
+               "SendFeedback",
+               Wolfram`ChatNB`cell$,
+               False
+              ],
+              Blank[]
+             ]
+            ],
+           Appearance ->
+            Dynamic[
+             FEPrivate`FrontEndResource[
+              "FEExpressions",
+              "SuppressMouseDownNinePatchAppearance"
+             ]
+            ],
+           Evaluator -> Automatic,
+           Method -> "Preemptive"
+          ]
+         }
+        },
+        AutoDelete -> False,
+        GridBoxItemSize -> {"Columns" -> {{Automatic}}, "Rows" -> {{Automatic}}},
+        GridBoxSpacings -> {"Columns" -> {{0.2}}}
+       ],
+       "Grid"
+      ]
+     ])
+   }
+  ],
+  Cell[
+   StyleData["DropShadowPaneBox"],
+   TemplateBoxOptions -> {
+    DisplayFunction ->
+     (Function[
+      PaneBox[
+       PanelBox[
+        #1,
+        Appearance ->
+         Image[
+          CompressedData[
+           "\n1:eJy9lU1LAlEUhqdxdIYYQ5gkwQFNXLiQlkMhLqJVIQhGCK7UUmljoEG0m7/p\n3/AP2HvlvXK6STnFNPB4mcM5z5x7nI/z8UtvaluWtfTw0xu9XS8Wo/f7Ak4e\n5svn2XzydDt/ncwmi8txBsEz4oBNgiNh+vaI49gSHBGbZICzh4zI0TU7zx63\n9KraLMgBF3gCl/GsuMYnv+GWToe1ynMMfJAX+Ix7zHOMa0i3vqb2uqxVngII\nQFEQMJ5nniv8W5fhtg3vCR0lEIIKqHINGQ+YJ/224dazyAnvKSiDGmiAJrjg\n2mC8zDztz+nZGO4s55dnP6quTl8EWqDNNWK8zryAdR490i17LnC/NdZfgZvV\narXRqHPGL5hXYt2ud/08iDn77CHkviN6usq5Xq+1u8t4xLyQdb6eu37O6Nbz\nKPL/anL/d6Bv9N1nvMW8Cuv0XBwxE9Nd5X7VfDtgAB7BlOuA8TbzqgncX/oG\nQ3qHv+j723nTN+D647yT3Cfss8P1oPvkH+7vNJ/LNN8nab4HrTi997cVp/vd\n2ef/8/fy0CPpd/4Dbscq/g==\n      "
+          ],
+          "Byte",
+          ColorSpace -> "RGB",
+          ImageResolution -> 72,
+          Interleaving -> True
+         ],
+        ContentPadding -> False,
+        FrameMargins -> {{0, 0}, {0, 0}}
+       ],
+       ImageMargins -> {{40, 50}, {0, 0}}
+      ]
+     ])
+   }
+  ],
+  Cell[
    StyleData["ChatbookPersona"],
    TemplateBoxOptions -> {
     DisplayFunction ->
@@ -17410,7 +18701,7 @@ Notebook[
         { },
         DynamicBox[
          ToBoxes[
-          Wolfram`Chatbook`InlineReferences`personaTemplateBoxes[
+          Wolfram`Chatbook`Common`personaTemplateBoxes[
            1,
            #input,
            #state,
@@ -17440,7 +18731,7 @@ Notebook[
         { },
         DynamicBox[
          ToBoxes[
-          Wolfram`Chatbook`InlineReferences`modifierTemplateBoxes[
+          Wolfram`Chatbook`Common`modifierTemplateBoxes[
            1,
            #input,
            #params,
@@ -17471,7 +18762,7 @@ Notebook[
         { },
         DynamicBox[
          ToBoxes[
-          Wolfram`Chatbook`InlineReferences`functionTemplateBoxes[
+          Wolfram`Chatbook`Common`functionTemplateBoxes[
            1,
            #input,
            #params,
@@ -17502,7 +18793,7 @@ Notebook[
         { },
         DynamicBox[
          ToBoxes[
-          Wolfram`Chatbook`InlineReferences`wlTemplateBoxes[
+          Wolfram`Chatbook`Common`wlTemplateBoxes[
            1,
            #input,
            #state,
@@ -17560,10 +18851,28 @@ Notebook[
         TagBox[
          TooltipBox[
           TemplateBox[{}, "ChatWidgetIcon"],
-          "\"Send to LLM\"",
-          TooltipStyle -> "TextStyling"
+          DynamicBox[
+           ToBoxes[
+            FEPrivate`FrontEndResource[
+             "ChatbookStrings",
+             "StylesheetChatWidgetButtonTooltip"
+            ],
+            StandardForm
+           ]
+          ]
          ],
-         Annotation[#1, "Send to LLM", "Tooltip"] &
+         Function[
+          Annotation[
+           #1,
+           Dynamic[
+            FEPrivate`FrontEndResource[
+             "ChatbookStrings",
+             "StylesheetChatWidgetButtonTooltip"
+            ]
+           ],
+           "Tooltip"
+          ]
+         ]
         ],
         MouseAppearanceTag["LinkHand"]
        ],
@@ -17602,6 +18911,296 @@ Notebook[
        FontSize -> 10,
        FontColor -> RGBColor[0.55433, 0.707942, 0.925795],
        FontWeight -> Plain
+      ]
+     ])
+   }
+  ],
+  Cell[
+   StyleData["DiscardedMaterialOpener"],
+   TemplateBoxOptions -> {
+    DisplayFunction ->
+     (Function[
+      DynamicModuleBox[
+       {Typeset`hover$$ = False, Typeset`open$$ = False},
+       PaneSelectorBox[
+        {
+         False ->
+          TagBox[
+           GridBox[
+            {
+             {
+              TagBox[
+               TagBox[
+                FrameBox[
+                 TagBox[
+                  GridBox[
+                   {
+                    {
+                     TemplateBox[{}, "DiscardedMaterial"],
+                     "\"Discarded material\"",
+                     PaneSelectorBox[
+                      {
+                       {True, False} ->
+                        TemplateBox[
+                         {RGBColor[0.3451, 0.72157, 0.98039]},
+                         "DiscardedMaterialOpenerIcon"
+                        ],
+                       {False, False} ->
+                        TemplateBox[
+                         {GrayLevel[0.7451]},
+                         "DiscardedMaterialOpenerIcon"
+                        ],
+                       {True, True} ->
+                        TemplateBox[
+                         {RGBColor[0.3451, 0.72157, 0.98039]},
+                         "DiscardedMaterialCloserIcon"
+                        ],
+                       {False, True} ->
+                        TemplateBox[
+                         {GrayLevel[0.7451]},
+                         "DiscardedMaterialCloserIcon"
+                        ]
+                      },
+                      Dynamic[{Typeset`hover$$, Typeset`open$$}]
+                     ]
+                    }
+                   },
+                   GridBoxAlignment -> {"Columns" -> {{Automatic}}, "Rows" -> {{Baseline}}},
+                   AutoDelete -> False,
+                   GridBoxItemSize -> {"Columns" -> {{Automatic}}, "Rows" -> {{Automatic}}}
+                  ],
+                  "Grid"
+                 ],
+                 Background ->
+                  Dynamic[
+                   FEPrivate`If[
+                    Typeset`hover$$,
+                    GrayLevel[1],
+                    RGBColor[0.94902, 0.96863, 0.98824]
+                   ]
+                  ],
+                 BaseStyle -> {
+                  "Text",
+                  "IconizedDefaultName",
+                  ShowStringCharacters -> False
+                 },
+                 FrameMargins -> 2,
+                 FrameStyle -> RGBColor[0.9098, 0.93333, 0.95294],
+                 RoundingRadius -> 5,
+                 StripOnInput -> False
+                ],
+                EventHandlerTag[
+                 {
+                  "MouseEntered" :> FEPrivate`Set[Typeset`hover$$, True],
+                  "MouseExited" :> FEPrivate`Set[Typeset`hover$$, False],
+                  "MouseClicked" :>
+                   FEPrivate`Set[
+                    Typeset`open$$,
+                    FEPrivate`If[Typeset`open$$, False, True]
+                   ],
+                  PassEventsDown -> True,
+                  Method -> "Preemptive",
+                  PassEventsUp -> True
+                 }
+                ]
+               ],
+               MouseAppearanceTag["LinkHand"]
+              ]
+             }
+            },
+            DefaultBaseStyle -> "Column",
+            GridBoxAlignment -> {"Columns" -> {{Left}}},
+            GridBoxItemSize -> {"Columns" -> {{Automatic}}, "Rows" -> {{Automatic}}},
+            GridBoxSpacings -> {"Columns" -> {{Automatic}}, "Rows" -> {{0.25}}}
+           ],
+           "Column"
+          ],
+         True ->
+          TagBox[
+           GridBox[
+            {
+             {
+              TagBox[
+               TagBox[
+                FrameBox[
+                 TagBox[
+                  GridBox[
+                   {
+                    {
+                     TemplateBox[{}, "DiscardedMaterial"],
+                     "\"Discarded material\"",
+                     PaneSelectorBox[
+                      {
+                       {True, False} ->
+                        TemplateBox[
+                         {RGBColor[0.3451, 0.72157, 0.98039]},
+                         "DiscardedMaterialOpenerIcon"
+                        ],
+                       {False, False} ->
+                        TemplateBox[
+                         {GrayLevel[0.7451]},
+                         "DiscardedMaterialOpenerIcon"
+                        ],
+                       {True, True} ->
+                        TemplateBox[
+                         {RGBColor[0.3451, 0.72157, 0.98039]},
+                         "DiscardedMaterialCloserIcon"
+                        ],
+                       {False, True} ->
+                        TemplateBox[
+                         {GrayLevel[0.7451]},
+                         "DiscardedMaterialCloserIcon"
+                        ]
+                      },
+                      Dynamic[{Typeset`hover$$, Typeset`open$$}]
+                     ]
+                    }
+                   },
+                   GridBoxAlignment -> {"Columns" -> {{Automatic}}, "Rows" -> {{Baseline}}},
+                   AutoDelete -> False,
+                   GridBoxItemSize -> {"Columns" -> {{Automatic}}, "Rows" -> {{Automatic}}}
+                  ],
+                  "Grid"
+                 ],
+                 Background ->
+                  Dynamic[
+                   FEPrivate`If[
+                    Typeset`hover$$,
+                    GrayLevel[1],
+                    RGBColor[0.94902, 0.96863, 0.98824]
+                   ]
+                  ],
+                 BaseStyle -> {
+                  "Text",
+                  "IconizedDefaultName",
+                  ShowStringCharacters -> False
+                 },
+                 FrameMargins -> 2,
+                 FrameStyle -> RGBColor[0.9098, 0.93333, 0.95294],
+                 RoundingRadius -> 5,
+                 StripOnInput -> False
+                ],
+                EventHandlerTag[
+                 {
+                  "MouseEntered" :> FEPrivate`Set[Typeset`hover$$, True],
+                  "MouseExited" :> FEPrivate`Set[Typeset`hover$$, False],
+                  "MouseClicked" :>
+                   FEPrivate`Set[
+                    Typeset`open$$,
+                    FEPrivate`If[Typeset`open$$, False, True]
+                   ],
+                  PassEventsDown -> True,
+                  Method -> "Preemptive",
+                  PassEventsUp -> True
+                 }
+                ]
+               ],
+               MouseAppearanceTag["LinkHand"]
+              ]
+             },
+             {
+              FrameBox[
+               #1,
+               Background -> RGBColor[0.94902, 0.96863, 0.98824],
+               FrameMargins -> 10,
+               FrameStyle -> RGBColor[0.9098, 0.93333, 0.95294],
+               ImageSize -> {Full, Automatic},
+               RoundingRadius -> 5,
+               StripOnInput -> False
+              ]
+             }
+            },
+            DefaultBaseStyle -> "Column",
+            GridBoxAlignment -> {"Columns" -> {{Left}}},
+            GridBoxItemSize -> {"Columns" -> {{Automatic}}, "Rows" -> {{Automatic}}},
+            GridBoxSpacings -> {"Columns" -> {{Automatic}}, "Rows" -> {{0.25}}}
+           ],
+           "Column"
+          ]
+        },
+        Dynamic[Typeset`open$$],
+        ImageMargins -> 10,
+        ImageSize -> Automatic,
+        Alignment -> Left,
+        ContentPadding -> False
+       ],
+       DynamicModuleValues :> { },
+       UnsavedVariables :> {Typeset`hover$$}
+      ]
+     ])
+   }
+  ],
+  Cell[
+   StyleData["DiscardedMaterialOpenerIcon"],
+   TemplateBoxOptions -> {
+    DisplayFunction ->
+     (Function[
+      GraphicsBox[
+       {
+        #1,
+        Thickness[0.090909],
+        Opacity[1.0],
+        FilledCurveBox[
+         {
+          {
+           {0, 2, 0},
+           {0, 1, 0},
+           {0, 1, 0},
+           {0, 1, 0},
+           {0, 1, 0},
+           {0, 1, 0},
+           {0, 1, 0},
+           {0, 1, 0},
+           {0, 1, 0},
+           {0, 1, 0},
+           {0, 1, 0}
+          }
+         },
+         {
+          {
+           {8.5, 4.5},
+           {6.5, 4.5},
+           {6.5, 2.5},
+           {4.5, 2.5},
+           {4.5, 4.5},
+           {2.5, 4.5},
+           {2.5, 6.5},
+           {4.5, 6.5},
+           {4.5, 8.5},
+           {6.5, 8.5},
+           {6.5, 6.5},
+           {8.5, 6.5}
+          }
+         }
+        ]
+       },
+       AspectRatio -> Automatic,
+       BaselinePosition -> Center -> Center,
+       ImageSize -> {11.0, 11.0},
+       PlotRange -> {{0.0, 11.0}, {0.0, 11.0}}
+      ]
+     ])
+   }
+  ],
+  Cell[
+   StyleData["DiscardedMaterialCloserIcon"],
+   TemplateBoxOptions -> {
+    DisplayFunction ->
+     (Function[
+      GraphicsBox[
+       {
+        #1,
+        Thickness[0.090909],
+        Opacity[1.0],
+        FilledCurveBox[
+         {{{0, 2, 0}, {0, 1, 0}, {0, 1, 0}}},
+         {{{8.5, 4.5}, {2.5, 4.5}, {2.5, 6.5}, {8.5, 6.5}}}
+        ]
+       },
+       AspectRatio -> Automatic,
+       BaselinePosition -> Center -> Center,
+       ImageSize -> {11.0, 11.0},
+       PlotRange -> {{0.0, 11.0}, {0.0, 11.0}}
       ]
      ])
    }

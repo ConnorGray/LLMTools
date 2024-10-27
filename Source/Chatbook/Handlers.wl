@@ -1,25 +1,12 @@
 (* ::Section::Closed:: *)
 (*Package Header*)
 BeginPackage[ "Wolfram`Chatbook`Handlers`" ];
+Begin[ "`Private`" ];
 
 (* :!CodeAnalysis::BeginBlock:: *)
 
-HoldComplete[
-    `addHandlerArguments;
-    `addProcessingArguments;
-    `applyHandlerFunction;
-    `applyProcessingFunction;
-    `getHandlerFunction;
-    `getHandlerFunctions;
-    `getProcessingFunction;
-    `getProcessingFunctions;
-];
-
-Begin[ "`Private`" ];
-
-Needs[ "Wolfram`Chatbook`"          ];
-Needs[ "Wolfram`Chatbook`Common`"   ];
-Needs[ "Wolfram`Chatbook`FrontEnd`" ];
+Needs[ "Wolfram`Chatbook`"        ];
+Needs[ "Wolfram`Chatbook`Common`" ];
 
 (* ::**************************************************************************************************************:: *)
 (* ::Section::Closed:: *)
@@ -71,8 +58,8 @@ applyHandlerFunction[ settings_Association, name_String, args0_ ] := Enclose[
         $ChatHandlerData = ConfirmBy[ addHandlerArguments @ args, AssociationQ, "AddHandlerArguments" ];
         handler = Confirm[ getHandlerFunction[ settings, name ], "HandlerFunction" ];
         handler @ KeyDrop[ $ChatHandlerData, $handlerDroppedParameters ]
-    ],
-    throwInternalFailure[ applyHandlerFunction[ settings, name, args0 ], ## ] &
+    ] // LogChatTiming[ name ],
+    throwInternalFailure
 ];
 
 applyHandlerFunction // endDefinition;
@@ -180,8 +167,8 @@ applyProcessingFunction[ settings_Association, name_String, args_HoldComplete, p
         ];
         function = Confirm[ getProcessingFunction[ settings, name, default ], "ProcessingFunction" ];
         function @@ args
-    ],
-    throwInternalFailure[ applyProcessingFunction[ settings, name, args, default ], ## ] &
+    ] // LogChatTiming[ name ],
+    throwInternalFailure
 ];
 
 applyProcessingFunction[ settings_, name_, args: Except[ _HoldComplete ], params_, default_ ] :=
@@ -251,8 +238,8 @@ resolveFunctions // endDefinition;
 (* ::**************************************************************************************************************:: *)
 (* ::Section::Closed:: *)
 (*Package Footer*)
-If[ Wolfram`ChatbookInternal`$BuildingMX,
-    Null;
+addToMXInitialization[
+    Null
 ];
 
 (* :!CodeAnalysis::EndBlock:: *)

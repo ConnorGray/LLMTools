@@ -2,46 +2,16 @@
 (* ::Section::Closed:: *)
 (*Package Header*)
 BeginPackage[ "Wolfram`Chatbook`FrontEnd`" ];
-
-`$dialogInputAllowed;
-`$feTaskWidgetCell;
-`$inEpilog;
-`$suppressButtonAppearance;
-`cellInformation;
-`cellObjectQ;
-`cellOpenQ;
-`cellPrint;
-`cellPrintAfter;
-`cellStyles;
-`checkEvaluationCell;
-`compressUntilViewed;
-`createFETask;
-`feParentObject;
-`fixCloudCell;
-`flushFETasks;
-`getBoxObjectFromBoxID;
-`initFETaskWidget;
-`notebookRead;
-`openerView;
-`parentCell;
-`parentNotebook;
-`replaceCellContext;
-`rootEvaluationCell;
-`selectionEvaluateCreateCell;
-`toCompressedBoxes;
-`topLevelCellQ;
-`topParentCell;
-`withNoRenderUpdates;
-
 Begin[ "`Private`" ];
 
-Needs[ "Wolfram`Chatbook`"          ];
-Needs[ "Wolfram`Chatbook`Common`"   ];
-Needs[ "Wolfram`Chatbook`Settings`" ];
+Needs[ "Wolfram`Chatbook`"        ];
+Needs[ "Wolfram`Chatbook`Common`" ];
 
 (* ::**************************************************************************************************************:: *)
 (* ::Section::Closed:: *)
 (*Config*)
+$cloudRasterizerLocation = "/Chatbook/API/RasterizerService";
+
 $checkEvaluationCell := $VersionNumber <= 13.2; (* Flag that determines whether to use workarounds for #187 *)
 
 (* Used to determine whether or not interactive input (e.g. ChoiceDialog, DialogInput) can be used: *)
@@ -153,12 +123,25 @@ createFETask // Attributes = { HoldFirst };
 createFETask[ eval_ ] /; $cloudNotebooks :=
     eval;
 
-createFETask[ eval_ ] := (
-    If[ $feTaskDebug, Internal`StuffBag[ $feTaskLog, <| "Task" -> Hold @ eval, "Created" -> AbsoluteTime[ ] |> ] ];
-    AppendTo[ $feTasks, Hold @ eval ];
-    ++$feTaskCreationCount;
-    ++$feTaskTrigger
-);
+createFETask[ eval_ ] :=
+    With[ { inline = $InlineChat, state = $inlineChatState, id = $chatEvaluationID, t = $chatStartTime },
+        If[ $feTaskDebug, Internal`StuffBag[ $feTaskLog, <| "Task" -> Hold @ eval, "Created" -> AbsoluteTime[ ] |> ] ];
+        (* FIXME: This Block is a bit of a hack: *)
+        AppendTo[
+            $feTasks,
+            Hold @ Block[
+                {
+                    $InlineChat       = inline,
+                    $inlineChatState  = state,
+                    $chatEvaluationID = id,
+                    $chatStartTime    = t
+                },
+                eval
+            ]
+        ];
+        ++$feTaskCreationCount;
+        ++$feTaskTrigger
+    ];
 
 createFETask // endDefinition;
 
@@ -215,6 +198,17 @@ feParentObject // endDefinition;
 (* ::**************************************************************************************************************:: *)
 (* ::Section::Closed:: *)
 (*Cells*)
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*$evaluationCell*)
+$evaluationCell :=
+    With[ { cell = EvaluationCell[ ] },
+        If[ TrueQ[ $chatState && MatchQ[ cell, _CellObject ] ],
+            $evaluationCell = cell,
+            cell
+        ]
+    ];
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsection::Closed:: *)
@@ -277,6 +271,9 @@ rootEvaluationCell[ source_, cells: { __CellObject } ] :=
         throwInternalFailure @ rootEvaluationCell[ source, cells ]
     ];
 
+
+rootEvaluationCell[ cell_CellObject, None ] := None;
+
 rootEvaluationCell // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
@@ -292,26 +289,275 @@ cellEvaluatingQ // endDefinition;
 (*cellInformation*)
 cellInformation // beginDefinition;
 
-cellInformation[ nbo_NotebookObject ] := cellInformation @ Cells @ nbo;
+cellInformation[ nbo_NotebookObject, a___ ] :=
+    cellInformation[ Cells @ nbo, a ];
 
-cellInformation[ cells: { ___CellObject } ] := Map[
-    Association,
-    Transpose @ {
-        Developer`CellInformation @ cells,
-        Thread[ "CellObject"           -> cells ],
-        Thread[ "CellAutoOverwrite"    -> CurrentValue[ cells, CellAutoOverwrite ] ],
-        Thread[ "ChatNotebookSettings" -> AbsoluteCurrentValue[ cells, { TaggingRules, "ChatNotebookSettings" } ] ]
-    }
+cellInformation[ cells: { ___CellObject } ] := Select[
+    Map[
+        Association,
+        Transpose @ {
+            Developer`CellInformation @ cells,
+            Thread[ "CellObject"           -> cells ],
+            Thread[ "CellAutoOverwrite"    -> CurrentValue[ cells, CellAutoOverwrite ] ],
+            Thread[ "ChatNotebookSettings" -> AbsoluteCurrentValue[ cells, { TaggingRules, "ChatNotebookSettings" } ] ]
+        }
+    ],
+    AssociationQ
 ];
 
-cellInformation[ cell_CellObject ] := Association[
-    Developer`CellInformation @ cell,
-    "CellObject"           -> cell,
-    "CellAutoOverwrite"    -> CurrentValue[ cell, CellAutoOverwrite ],
-    "ChatNotebookSettings" -> AbsoluteCurrentValue[ cell, { TaggingRules, "ChatNotebookSettings" } ]
-];
+cellInformation[ cell_CellObject ] :=
+    With[ { info = Association @ Developer`CellInformation @ cell },
+        If[ AssociationQ @ info,
+            Association[
+                info,
+                "CellObject"           -> cell,
+                "CellAutoOverwrite"    -> CurrentValue[ cell, CellAutoOverwrite ],
+                "ChatNotebookSettings" -> AbsoluteCurrentValue[ cell, { TaggingRules, "ChatNotebookSettings" } ]
+            ],
+            Missing[ "NotAvailable" ]
+        ]
+    ];
+
+cellInformation[ cells: { ___CellObject }, key_String ] :=
+    Replace[
+        cellInformation @ cells,
+        as: KeyValuePattern @ { } :> Lookup[ as, key, Missing[ "NotAvailable" ] ],
+        { 1 }
+    ];
+
+cellInformation[ cell_CellObject, key_String ] :=
+    Replace[
+        cellInformation @ cell,
+        as: KeyValuePattern @ { } :> Lookup[ as, key, Missing[ "NotAvailable" ] ]
+    ];
+
+cellInformation[ cells: { ___CellObject }, keys: { ___String } ] :=
+    Replace[
+        cellInformation @ cells,
+        as: KeyValuePattern @ { } :> KeyTake[ as, keys ],
+        { 1 }
+    ];
+
+cellInformation[ cell_CellObject, keys: { ___String } ] :=
+    Replace[
+        cellInformation @ cell,
+        as: KeyValuePattern @ { } :> KeyTake[ as, keys ]
+    ];
 
 cellInformation // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*notebookInformation*)
+notebookInformation // beginDefinition;
+
+notebookInformation[ ] :=
+    notebookInformation @ Notebooks[ ];
+
+notebookInformation[ All ] :=
+    notebookInformation @ Notebooks[ ];
+
+notebookInformation[ nbo_NotebookObject ] := Enclose[
+    Catch @ Module[ { throwIfClosed, info, visible, windowFrame, selected, input, settings },
+
+        throwIfClosed = Replace[ Missing[ "NotebookClosed", ___ ] | $Failed :> Throw @ missingNotebook @ nbo ];
+
+        info = ConfirmMatch[ throwIfClosed @ notebookInformation0 @ nbo, _? AssociationQ, "Info" ];
+
+        visible = ConfirmMatch[
+            throwIfClosed @ AbsoluteCurrentValue[ nbo, Visible ],
+            True|False|Inherited,
+            "Visible"
+        ];
+
+        windowFrame = ConfirmMatch[
+            throwIfClosed @ AbsoluteCurrentValue[ nbo, WindowFrame ],
+            _String|$$unspecified,
+            "WindowFrame"
+        ];
+
+        selected = SelectedNotebook[ ] === nbo;
+        input    = InputNotebook[ ]    === nbo;
+
+        settings = ConfirmBy[
+            throwIfClosed @ Association @ Replace[
+                AbsoluteCurrentValue[ nbo, { TaggingRules, "ChatNotebookSettings" } ],
+                Inherited :> AbsoluteCurrentValue[ $FrontEnd, { TaggingRules, "ChatNotebookSettings" } ]
+            ],
+            AssociationQ,
+            "Settings"
+        ];
+
+        ConfirmBy[
+            KeySort @ DeleteMissing @ <|
+                "NotebookObject"       -> nbo,
+                "ChatNotebookSettings" -> settings,
+                "ShortID"              -> tinyHash @ nbo,
+                "InputNotebook"        -> TrueQ @ input,
+                "SelectedNotebook"     -> TrueQ @ selected,
+                "Visible"              -> TrueQ @ visible,
+                "WindowFrame"          -> windowFrame,
+                info
+            |>,
+            AssociationQ,
+            "Result"
+        ]
+    ],
+    throwInternalFailure
+];
+
+(* Definition that's optimized for listable FE calls: *)
+notebookInformation[ notebooks_List ] :=
+    notebooksInformation @ notebooks;
+
+notebookInformation // endDefinition;
+
+
+notebookInformation0 // beginDefinition;
+
+notebookInformation0[ nbo_NotebookObject ] := Enclose[
+    Catch @ Module[ { info, as },
+        info = NotebookInformation @ nbo;
+        If[ FailureQ @ info, Throw @ Missing[ "NotebookClosed", nbo ] ];
+        as = ConfirmBy[ Association @ info, AssociationQ, "Association" ];
+        ConfirmBy[ AssociationMap[ formatNotebookInformation, as ], AssociationQ, "Formatted" ]
+    ],
+    throwInternalFailure
+];
+
+notebookInformation0 // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*notebooksInformation*)
+notebooksInformation // beginDefinition;
+
+notebooksInformation[ { } ] := { };
+
+notebooksInformation[ notebooks: { __NotebookObject } ] := Enclose[
+    Module[
+        { nbObjects, visible, windowFrame, selected, input, id, settings, feSettings, info, transposed, result },
+
+        nbObjects   = Thread[ "NotebookObject"   -> notebooks ];
+        visible     = Thread[ "Visible"          -> AbsoluteCurrentValue[ notebooks, Visible ] ];
+        windowFrame = Thread[ "WindowFrame"      -> AbsoluteCurrentValue[ notebooks, WindowFrame ] ];
+        selected    = Thread[ "SelectedNotebook" -> Map[ SameAs @ SelectedNotebook[ ], notebooks ] ];
+        input       = Thread[ "InputNotebook"    -> Map[ SameAs @ InputNotebook[ ], notebooks ] ];
+        id          = Thread[ "ShortID"          -> tinyHash /@ notebooks ];
+
+        settings = Thread[
+            "ChatNotebookSettings" -> AbsoluteCurrentValue[ notebooks, { TaggingRules, "ChatNotebookSettings" } ]
+        ];
+
+        If[ MemberQ[ settings, "ChatNotebookSettings" -> Inherited|_List ],
+            feSettings = GeneralUtilities`ToAssociations @ AbsoluteCurrentValue[
+                $FrontEnd,
+                { TaggingRules, "ChatNotebookSettings" }
+            ];
+            settings = Replace[
+                settings,
+                {
+                    Inherited  -> feSettings,
+                    rules_List :> <| feSettings, rules |>
+                },
+                { 2 }
+            ]
+        ];
+
+        info = notebookInformation0 /@ notebooks;
+
+        transposed = ConfirmBy[
+            Transpose @ { nbObjects, info, visible, windowFrame, selected, input, id, settings },
+            ListQ,
+            "Transpose"
+        ];
+
+        result = ConfirmMatch[
+            combineNotebookInfo /@ transposed,
+            { (_? AssociationQ | Missing[ "NotebookClosed", _NotebookObject ])... },
+            "Result"
+        ];
+
+        ConfirmAssert[ Length @ result === Length @ notebooks, "LengthCheck" ];
+
+        result
+    ],
+    throwInternalFailure
+];
+
+notebooksInformation // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*combineNotebookInfo*)
+combineNotebookInfo // beginDefinition;
+combineNotebookInfo[ a: { $Failed | Missing[ "NotebookClosed", ___ ], ___ } ] := missingNotebook @ a;
+combineNotebookInfo[ a_List ] := With[ { as = Association @ a }, KeySort @ DeleteMissing @ as /; notebookInfoQ @ as ];
+combineNotebookInfo[ a_List ] := missingNotebook @ a;
+combineNotebookInfo // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*missingNotebook*)
+missingNotebook // beginDefinition;
+missingNotebook[ { _, "NotebookObject" -> nbo_NotebookObject, ___ } ] := missingNotebook @ nbo;
+missingNotebook[ nbo_NotebookObject ] := Missing[ "NotebookClosed", nbo ];
+missingNotebook // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*notebookInfoQ*)
+notebookInfoQ // beginDefinition;
+notebookInfoQ[ as_Association? AssociationQ ] := FreeQ[ as, _FrontEnd`AbsoluteCurrentValue|$Failed, { 1 } ];
+notebookInfoQ // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*formatNotebookInformation*)
+formatNotebookInformation // beginDefinition;
+formatNotebookInformation[ (Rule|RuleDelayed)[ key_, value_ ] ] := formatNotebookInformation[ key, value ];
+formatNotebookInformation[ "Uri", value_ ] := formatNotebookInformation[ "FileName", value ];
+formatNotebookInformation[ key_, value_ ] := ToString @ key -> formatNotebookInformation0[ key, value ];
+formatNotebookInformation // endDefinition;
+
+formatNotebookInformation0 // beginDefinition;
+formatNotebookInformation0[ "FileName", file_ ] := toFileName @ file;
+formatNotebookInformation0[ "FileModificationTime", t_Real ] := formatNotebookInformation0[ "Timestamp", t ];
+formatNotebookInformation0[ "MemoryModificationTime", t_Real ] := formatNotebookInformation0[ "Timestamp", t ];
+formatNotebookInformation0[ "Timestamp", t_Real ] := TimeZoneConvert @ DateObject[ t, TimeZone -> 0 ];
+formatNotebookInformation0[ key_String, value_ ] := value;
+formatNotebookInformation0 // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*toFileName*)
+toFileName // beginDefinition;
+toFileName[ file_ ] := toFileName[ file ] = toFileName0 @ file;
+toFileName // endDefinition;
+
+toFileName0 // beginDefinition;
+toFileName0[ file0_FrontEnd`FileName ] := With[ { file = ToFileName @ file0 }, toFileName0 @ file /; StringQ @ file ];
+toFileName0[ file_String ] := StringReplace[ file, "\\" -> "/" ];
+toFileName0[ file_ ] := file;
+toFileName0 // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*fromFETimestamp*)
+(* TODO: use this when passing notebook info to the LLM *)
+fromFETimestamp // beginDefinition;
+
+fromFETimestamp[ t_Real ] := Enclose[
+    Module[ { date, string, relative },
+        date     = ConfirmBy[ TimeZoneConvert @ DateObject[ t, TimeZone -> 0 ], DateObjectQ, "Date" ];
+        string   = ConfirmBy[ DateString[ date, { "ISODateTime", ".", "Millisecond" } ], StringQ, "String" ];
+        relative = ConfirmBy[ relativeTimeString @ date, StringQ, "Relative" ];
+        string<>" ("<>relative<>")"
+    ],
+    throwInternalFailure
+];
+
+fromFETimestamp // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsection::Closed:: *)
@@ -320,6 +566,53 @@ parentCell // beginDefinition;
 parentCell[ obj: _CellObject|_BoxObject ] /; $cloudNotebooks := cloudParentCell @ obj;
 parentCell[ obj: _CellObject|_BoxObject ] := ParentCell @ obj;
 parentCell // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*nextCell*)
+nextCell // beginDefinition;
+nextCell // Options = { CellStyle -> Automatic };
+
+nextCell[ cell_CellObject, opts: OptionsPattern[ ] ] :=
+    If[ TrueQ @ $cloudNotebooks,
+        cloudNextCell[ cell, OptionValue[ CellStyle ] ],
+        NextCell[ cell, opts ]
+    ];
+
+nextCell // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*cloudNextCell*)
+cloudNextCell // beginDefinition;
+
+cloudNextCell[ cell_CellObject, style_ ] :=
+    cloudNextCell[ cell, parentNotebook @ cell, style ];
+
+cloudNextCell[ cell_CellObject, nbo_NotebookObject, style_ ] :=
+    cloudNextCell[ cell, Cells @ nbo, style ];
+
+cloudNextCell[ cell_, { ___, cell_, next_CellObject, ___ }, Automatic ] :=
+    next;
+
+cloudNextCell[ cell_, { ___, cell_, after__CellObject }, style_ ] :=
+    SelectFirst[ { after }, MemberQ[ cellStyles @ #, style ] &, None ];
+
+cloudNextCell[ _CellObject, _, _ ] :=
+    None;
+
+cloudNextCell // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*previousCell*)
+previousCell // beginDefinition;
+previousCell[ cell_CellObject ] /; $cloudNotebooks := previousCell[ cell, parentNotebook @ cell ];
+previousCell[ cell_CellObject ] := PreviousCell @ cell;
+previousCell[ cell_CellObject, nbo_NotebookObject ] := previousCell[ cell, Cells @ nbo ];
+previousCell[ cell_, { ___, previous_CellObject, cell_, ___ } ] := previous;
+previousCell[ _CellObject, ___ ] := None;
+previousCell // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsubsection::Closed:: *)
@@ -363,8 +656,8 @@ topParentCell // endDefinition;
 (* ::Subsection::Closed:: *)
 (*cellPrint*)
 cellPrint // beginDefinition;
-cellPrint[ cell_Cell ] /; $cloudNotebooks := cloudCellPrint @ cell;
-cellPrint[ cell_Cell ] := MathLink`CallFrontEnd @ FrontEnd`CellPrintReturnObject @ cell;
+cellPrint[ cell_Cell ] /; $cloudNotebooks := contextBlock @ cloudCellPrint @ cell;
+cellPrint[ cell_Cell ] := contextBlock @ MathLink`CallFrontEnd @ FrontEnd`CellPrintReturnObject @ cell;
 cellPrint // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
@@ -372,24 +665,28 @@ cellPrint // endDefinition;
 (*cloudCellPrint*)
 cloudCellPrint // beginDefinition;
 
-cloudCellPrint[ cell0_Cell ] :=
-    Enclose @ Module[ { cellUUID, nbUUID, cell },
-        cellUUID = CreateUUID[ ];
-        nbUUID   = ConfirmBy[ cloudNotebookUUID[ ], StringQ ];
-        cell     = Append[ DeleteCases[ cell0, ExpressionUUID -> _ ], ExpressionUUID -> cellUUID ];
-        CellPrint @ cell;
-        CellObject[ cellUUID, nbUUID ]
+cloudCellPrint[ cell_Cell ] :=
+    With[ { obj = MathLink`CallFrontEnd @ FrontEnd`CellPrintReturnObject @ cell },
+        obj /; MatchQ[ obj, _CellObject ]
     ];
 
-cloudCellPrint // endDefinition;
+cloudCellPrint[ Cell[ a__, CellTags -> tags0_, b___ ] ] := Enclose[
+    Module[ { uuid, tags, cell, obj },
+        uuid = ConfirmBy[ CreateUUID[ ], StringQ, "UUID" ];
+        tags = Select[ Flatten @ { tags0, uuid }, StringQ ];
+        cell = Cell[ a, CellTags -> tags, b ];
+        CellPrint @ cell;
+        obj = First @ ConfirmMatch[ Cells[ CellTags -> uuid ], { _CellObject }, "Cells" ];
+        SetOptions[ obj, CellTags -> Replace[ tags, { uuid } -> Inherited ] ];
+        obj
+    ],
+    throwInternalFailure
+];
 
-(* ::**************************************************************************************************************:: *)
-(* ::Subsubsection::Closed:: *)
-(*cloudNotebookUUID*)
-cloudNotebookUUID // beginDefinition;
-cloudNotebookUUID[ ] := cloudNotebookUUID[ EvaluationNotebook[ ] ];
-cloudNotebookUUID[ NotebookObject[ _, uuid_String ] ] := uuid;
-cloudNotebookUUID // endDefinition;
+cloudCellPrint[ Cell[ a___ ] ] :=
+    cloudCellPrint @ Cell[ a, CellTags -> { } ];
+
+cloudCellPrint // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsection::Closed:: *)
@@ -398,7 +695,7 @@ cellPrintAfter[ target_ ][ cell_ ] := cellPrintAfter[ target, cell ];
 
 cellPrintAfter[ target_CellObject, cell: Cell[ __, ExpressionUUID -> uuid_, ___ ] ] := (
     SelectionMove[ target, After, Cell, AutoScroll -> False ];
-    NotebookWrite[ parentNotebook @ target, cell ];
+    contextBlock @ NotebookWrite[ parentNotebook @ target, cell ];
     CellObject @ uuid
 );
 
@@ -456,7 +753,9 @@ fixCloudCell // beginDefinition;
 fixCloudCell[ cell_ ] /; ! TrueQ @ $cloudNotebooks := cell;
 fixCloudCell[ Cell[ CellGroupData[ cells_, a___ ] ] ] := Cell[ CellGroupData[ fixCloudCell @ cells, a ] ];
 fixCloudCell[ Cell[ text_, args___ ] ] := Cell[ applyCloudCellFixes @ text, args ];
+fixCloudCell[ content: _BoxData|_TextData|_String ] := applyCloudCellFixes @ content;
 fixCloudCell[ cells_List ] := fixCloudCell /@ cells;
+fixCloudCell[ cell_ ] := cell;
 fixCloudCell // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
@@ -475,8 +774,85 @@ $cloudCellFixes := $cloudCellFixes = Dispatch @ {
 };
 
 (* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*cellReference*)
+cellReference // beginDefinition;
+cellReference[ cell_CellObject ] := Lookup[ $cellReferences, cell, createCellReference @ cell ];
+cellReference[ ref_String      ] := Lookup[ $cellReferences, ref , findCellReference @ ref    ];
+cellReference // endDefinition;
+
+$cellReferences = <| |>;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*createCellReference*)
+createCellReference // beginDefinition;
+
+createCellReference[ cell_CellObject ] :=
+    With[ { ref = tinyHash @ cell },
+        $cellReferences[ cell ] = ref;
+        $cellReferences[ ref ] = cell;
+        ref
+    ];
+
+createCellReference // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*findCellReference*)
+findCellReference // beginDefinition;
+findCellReference[ ref_String ] /; StringLength @ ref > $tinyHashLength := findCellReferenceInString @ ref;
+findCellReference[ ref_String ] := Catch[ findNotebookCell[ ref ] /@ Notebooks[ ]; Missing[ "NotFound" ], $ref ];
+findCellReference // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsubsection::Closed:: *)
+(*findCellReferenceInString*)
+findCellReferenceInString // beginDefinition;
+findCellReferenceInString[ s_String ] := findCellReferenceInString[ s, Select[ Keys @ $cellReferences, StringQ ] ];
+findCellReferenceInString[ s_String, refs: { ___String } ] := First[ StringCases[ s, refs, 1 ], Missing[ "NotFound" ] ];
+findCellReferenceInString // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsubsection::Closed:: *)
+(*findNotebookCell*)
+findNotebookCell // beginDefinition;
+findNotebookCell[ ref_ ] := findNotebookCell[ ref, # ] &;
+findNotebookCell[ ref_, nbo_ ] := checkCellReference[ ref ] /@ Cells @ nbo;
+findNotebookCell // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsubsection::Closed:: *)
+(*checkCellReference*)
+checkCellReference // beginDefinition;
+checkCellReference[ ref_ ] := checkCellReference[ ref, # ] &;
+checkCellReference[ ref_, cell_CellObject ] := With[ { r = cellReference @ cell }, Throw[ cell, $ref ] /; ref === r ];
+checkCellReference[ _, _ ] := Null;
+checkCellReference // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
 (* ::Section::Closed:: *)
 (*Notebooks*)
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*$evaluationNotebook*)
+$evaluationNotebook :=
+    With[ { nbo = evaluationNotebook[ ] },
+        If[ TrueQ[ $chatState && MatchQ[ nbo, _NotebookObject ] ],
+            $evaluationNotebook = nbo,
+            nbo
+        ]
+    ];
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*evaluationNotebook*)
+evaluationNotebook // beginDefinition;
+evaluationNotebook[ ] := evaluationNotebook @ $evaluationCell;
+evaluationNotebook[ cell_CellObject ] := With[ { nbo = parentNotebook @ cell }, nbo /; MatchQ[ nbo, _NotebookObject ] ];
+evaluationNotebook[ _ ] := EvaluationNotebook[ ];
+evaluationNotebook // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsection::Closed:: *)
@@ -497,24 +873,53 @@ withNoRenderUpdates // endDefinition;
 (* ::Subsection::Closed:: *)
 (*parentNotebook*)
 parentNotebook // beginDefinition;
-parentNotebook[ obj: _CellObject|_BoxObject ] := Notebooks @ obj;
+parentNotebook[ obj: _CellObject|_BoxObject ] := parentNotebook[ obj, Notebooks @ obj ];
+parentNotebook[ obj_, nbo_NotebookObject ] := nbo;
+parentNotebook[ obj_CellObject, _? FailureQ ] := tryInlineChatParent @ obj;
+parentNotebook[ _, fail_ ] := fail;
 parentNotebook // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*tryInlineChatParent*)
+tryInlineChatParent // beginDefinition;
+tryInlineChatParent[ obj_CellObject ] := tryInlineChatParent[ obj, currentChatSettings[ obj, "InlineChatRootCell" ] ];
+tryInlineChatParent[ obj_, cell_CellObject ] := Notebooks @ cell;
+tryInlineChatParent[ _, _ ] := $Failed;
+tryInlineChatParent // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsection::Closed:: *)
 (*notebookRead*)
 notebookRead // beginDefinition;
 notebookRead[ cells_ ] /; $cloudNotebooks := cloudNotebookRead @ cells;
-notebookRead[ cells_ ] := NotebookRead @ cells;
+notebookRead[ cells_ ] := notebookReadWithCellObjects @ cells;
 notebookRead // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsubsection::Closed:: *)
 (*cloudNotebookRead*)
 cloudNotebookRead // beginDefinition;
-cloudNotebookRead[ cells: { ___CellObject } ] := NotebookRead /@ cells;
-cloudNotebookRead[ cell_ ] := NotebookRead @ cell;
+cloudNotebookRead[ cells: { ___CellObject } ] := notebookReadWithCellObjects /@ cells;
+cloudNotebookRead[ cell_ ] := notebookReadWithCellObjects @ cell;
 cloudNotebookRead // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*notebookReadWithCellObjects*)
+notebookReadWithCellObjects // beginDefinition;
+notebookReadWithCellObjects[ cell_CellObject ] := appendCellObject[ NotebookRead @ cell, cell ];
+notebookReadWithCellObjects[ cells: { ___CellObject } ] := appendCellObject[ NotebookRead @ cells, cells ];
+notebookReadWithCellObjects[ other_ ] := NotebookRead @ other;
+notebookReadWithCellObjects // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*appendCellObject*)
+appendCellObject // beginDefinition;
+appendCellObject[ Cell[ a___ ], obj_CellObject ] := Cell[ a, CellObject -> obj ];
+appendCellObject[ cells: { ___Cell }, objs: { ___CellObject } ] := MapThread[ appendCellObject, { cells, objs } ];
+appendCellObject // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
 (* ::Section::Closed:: *)
@@ -544,7 +949,12 @@ getBoxObjectFromBoxID[ cell_CellObject, uuid_ ] :=
     ];
 
 getBoxObjectFromBoxID[ nbo_NotebookObject, uuid_String ] :=
-    MathLink`CallFrontEnd @ FrontEnd`BoxReferenceBoxObject @ FE`BoxReference[ nbo, { { uuid } } ];
+    MathLink`CallFrontEnd @ FrontEnd`BoxReferenceBoxObject @ FE`BoxReference[
+        nbo,
+        { { uuid } },
+        FE`SearchStart -> "StartFromBeginning",
+        FE`SearchStop  -> "StopAtEnd"
+    ];
 
 getBoxObjectFromBoxID // endDefinition;
 
@@ -613,18 +1023,162 @@ openerView1[ args___ ] := Quiet[
 compressUntilViewed // beginDefinition;
 
 compressUntilViewed[ expr_ ] :=
+    compressUntilViewed[ Unevaluated @ expr, False ];
+
+compressUntilViewed[ expr_, False ] :=
     With[ { b64 = BaseEncode @ BinarySerialize[ Unevaluated @ expr, PerformanceGoal -> "Size" ] },
-        If[ ByteCount @ b64 < ByteCount @ expr,
-            Dynamic[ BinaryDeserialize @ BaseDecode @ b64, SingleEvaluation -> True, DestroyAfterEvaluation -> True ],
-            expr
+        Dynamic[ BinaryDeserialize @ BaseDecode @ b64, SingleEvaluation -> True, DestroyAfterEvaluation -> True ]
+    ];
+
+compressUntilViewed[ expr_, True ] :=
+    With[ { b64 = BaseEncode @ BinarySerialize[ Unevaluated @ expr, PerformanceGoal -> "Size" ] },
+        DynamicModule[
+            { display },
+            Dynamic[ Replace[ display, _Symbol :> ProgressIndicator[ Appearance -> "Percolate" ] ] ],
+            Initialization            :> (display = BinaryDeserialize @ BaseDecode @ b64),
+            SynchronousInitialization -> False,
+            UnsavedVariables          :> { display }
         ]
     ];
 
 compressUntilViewed // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*$statelessProgressIndicator*)
+
+(* TODO: move this to the stylesheet *)
+$statelessProgressIndicator =
+    With[ { clock := Clock[ 10, 1.5 ] },
+        RawBoxes @ GraphicsBox[
+            {
+                GrayLevel[ 0.75 ],
+                {
+                    {
+                        PointSize @ Dynamic @ FEPrivate`Which[
+                            FEPrivate`Less[ clock, 0 ],
+                            0.08,
+                            FEPrivate`Less[ clock, 2 ],
+                            0.08 + 0.05 * clock,
+                            FEPrivate`Less[ clock, 4 ],
+                            0.28 - (0.05 * clock),
+                            True,
+                            0.08
+                        ],
+                        PointBox @ { 0, 0 }
+                    },
+                    {
+                        PointSize @ Dynamic @ FEPrivate`Which[
+                            FEPrivate`Less[ clock, 1 ],
+                            0.08,
+                            FEPrivate`Less[ clock, 3 ],
+                            0.03 + 0.05 * clock,
+                            FEPrivate`Less[ clock, 5 ],
+                            0.33 - (0.05 * clock),
+                            True,
+                            0.08
+                        ],
+                        PointBox @ { 1, 0 }
+                    },
+                    {
+                        PointSize @ Dynamic @ FEPrivate`Which[
+                            FEPrivate`Less[ clock, 2 ],
+                            0.08,
+                            FEPrivate`Less[ clock, 4 ],
+                            -0.02 + 0.05 * clock,
+                            FEPrivate`Less[ clock, 6 ],
+                            0.38 - (0.05 * clock),
+                            True,
+                            0.08
+                        ],
+                        PointBox @ { 2, 0 }
+                    },
+                    {
+                        PointSize @ Dynamic @ FEPrivate`Which[
+                            FEPrivate`Less[ clock, 3 ],
+                            0.08,
+                            FEPrivate`Less[ clock, 5 ],
+                            -0.07 + 0.05 * clock,
+                            FEPrivate`Less[ clock, 7 ],
+                            0.43 - (0.05 * clock),
+                            True,
+                            0.08
+                        ],
+                        PointBox @ { 3, 0 }
+                    },
+                    {
+                        PointSize @ Dynamic @ FEPrivate`Which[
+                            FEPrivate`Less[ clock, 4 ],
+                            0.08,
+                            FEPrivate`Less[ clock, 6 ],
+                            -0.12 + 0.05 * clock,
+                            FEPrivate`Less[ clock, 8 ],
+                            0.48 - (0.05 * clock),
+                            True,
+                            0.08
+                        ],
+                        PointBox @ { 4, 0 }
+                    }
+                }
+            },
+            AspectRatio -> Full,
+            ImageSize   -> { 50, 12 },
+            PlotRange   -> { { -1, 5 }, { -1, 1 } }
+        ]
+    ];
+
+(* ::**************************************************************************************************************:: *)
 (* ::Section::Closed:: *)
 (*Misc*)
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*usingFrontEnd*)
+usingFrontEnd // beginDefinition;
+usingFrontEnd // Attributes = { HoldFirst };
+
+usingFrontEnd[ eval_ ] :=
+    Block[ { usingFrontEnd = # &, $usingFE = True },
+        If[ TrueQ @ $CloudEvaluation,
+            PreemptProtect @ UsingFrontEnd @ eval,
+            UsingFrontEnd @ eval
+        ]
+    ];
+
+usingFrontEnd // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*rasterizeBlock*)
+(* Ensures that any Rasterize calls that occur in `eval` will get wrapped in `PreemptProtect` when in cloud. *)
+rasterizeBlock // beginDefinition;
+rasterizeBlock // Attributes = { HoldFirst };
+
+rasterizeBlock[ eval_ ] := Block[ { rasterizeBlock = # & },
+    Internal`InheritedBlock[ { Rasterize },
+
+        Unprotect @ Rasterize;
+
+        PrependTo[
+            DownValues @ Rasterize,
+            HoldPattern @ Rasterize[ a___ ] /; ! TrueQ @ $usingFE :>
+                usingFrontEnd @ Rasterize @ a
+        ];
+
+        Protect @ Rasterize;
+
+        eval
+    ]
+];
+
+rasterizeBlock // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*rasterize*)
+rasterize // beginDefinition;
+rasterize[ expr_, opts___ ] := usingFrontEnd @ Rasterize[ Unevaluated @ expr, opts ];
+rasterize // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsection::Closed:: *)
@@ -644,7 +1198,7 @@ replaceCellContext // endDefinition;
 (* ::**************************************************************************************************************:: *)
 (* ::Section::Closed:: *)
 (*Package Footer*)
-If[ Wolfram`ChatbookInternal`$BuildingMX,
+addToMXInitialization[
     $feTaskDebug = False;
     $cloudCellFixes;
 ];

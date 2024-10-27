@@ -7,35 +7,18 @@
 
 BeginPackage[ "Wolfram`Chatbook`InlineReferences`" ];
 
-`insertPersonaInputBox;
-`insertFunctionInputBox;
-`insertModifierInputBox;
-`insertTrailingFunctionInputBox;
-
-`insertPersonaTemplate;
-`insertFunctionTemplate;
-`insertModifierTemplate;
-`insertWLTemplate;
-
-`personaTemplateBoxes;
+(* These symbols are hardcoded into the stylesheet and need to remain in this context: *)
 `functionTemplateBoxes;
 `modifierTemplateBoxes;
+`personaTemplateBoxes;
 `wlTemplateBoxes;
-
-`parseInlineReferences;
-`resolveLastInlineReference;
-`resolveInlineReferences;
-
-`$cloudInlineReferenceButtons;
 
 Begin[ "`Private`" ];
 
 Needs[ "Wolfram`Chatbook`"                   ];
 Needs[ "Wolfram`Chatbook`Common`"            ];
-Needs[ "Wolfram`Chatbook`FrontEnd`"          ];
 Needs[ "Wolfram`Chatbook`Personas`"          ];
 Needs[ "Wolfram`Chatbook`ResourceInstaller`" ];
-Needs[ "Wolfram`Chatbook`Serialization`"     ];
 
 
 
@@ -347,7 +330,7 @@ modifierInputBox[ args_List, uuid_ ] :=
                                     ContinuousAction        -> False,
                                     FieldCompletionFunction -> modifierCompletion,
                                     FieldSize               -> { { 15, Infinity }, Automatic },
-                                    FieldHint               -> "PromptName",
+                                    FieldHint               -> tr[ "InlineReferencesFieldHint" ],
                                     BaseStyle               -> $inputFieldStyle,
                                     Appearance              -> "Frameless",
                                     ContentPadding          -> False,
@@ -620,7 +603,7 @@ functionInputBox[ args_List, uuid_ ] :=
                                     ContinuousAction        -> False,
                                     FieldCompletionFunction -> functionCompletion,
                                     FieldSize               -> { { 15, Infinity }, Automatic },
-                                    FieldHint               -> "PromptName",
+                                    FieldHint               -> tr[ "InlineReferencesFieldHint" ],
                                     BaseStyle               -> $inputFieldStyle,
                                     Appearance              -> "Frameless",
                                     ContentPadding          -> False,
@@ -1064,7 +1047,7 @@ personaCompletion // endDefinition;
 $personaNames := Select[
     DeleteDuplicates @ Flatten @ {
         AbsoluteCurrentValue @ { TaggingRules, "ChatNotebookSettings", "LLMEvaluator", "LLMEvaluatorName" },
-        Keys @ GetCachedPersonaData[ ],
+        Keys @ GetCachedPersonaData[ "IncludeHidden" -> False ],
         $availablePersonaNames
     },
     StringQ
@@ -1364,18 +1347,18 @@ setPersonaState[state_, "Input", input_] := (
 
 setPersonaState[state_, "Chosen", input_] :=
 Enclose[
-	With[{cellobj = EvaluationCell[]},
+	With[{cellObj = EvaluationCell[]},
 		state = "Chosen";
-		SelectionMove[cellobj, All, Cell];
+		SelectionMove[cellObj, All, Cell];
 		FrontEndExecute[FrontEnd`FrontEndToken["MoveNext"]];
-		CurrentValue[cellobj, {TaggingRules, "PersonaName"}] = input;
+		CurrentValue[cellObj, {TaggingRules, "PersonaName"}] = input;
 
 		If[ ! MemberQ[ Keys @ GetCachedPersonaData[ ], input ],
 	        ConfirmBy[ ResourceInstall[ "Prompt: "<>input ], FileExistsQ, "ResourceInstall" ];
 	        ConfirmAssert[ MemberQ[ Keys @ GetCachedPersonaData[ ], input ], "GetCachedPersonaData" ]
 	    ];
 
-		With[ { parent = ParentCell @ cellobj },
+		With[ { parent = ParentCell @ cellObj },
 			CurrentValue[ parent, CellDingbat ] = Inherited;
 			CurrentValue[ parent, { TaggingRules, "ChatNotebookSettings", "LLMEvaluator" } ] = input;
 		]
@@ -1489,11 +1472,11 @@ Cell[BoxData[FormBox[
 insertPersonaTemplate[ cell_CellObject ] := insertPersonaTemplate[ cell, parentNotebook @ cell ];
 
 insertPersonaTemplate[ parent_CellObject, nbo_NotebookObject ] :=
-	Module[ { uuid, cellexpr },
+	Module[ { uuid, cellExpr },
 		resolveInlineReferences @ parent;
 		uuid = CreateUUID[ ];
-		cellexpr = personaTemplateCell[ "", "Input", uuid ];
-		NotebookWrite[ nbo, cellexpr ];
+		cellExpr = personaTemplateCell[ "", "Input", uuid ];
+		NotebookWrite[ nbo, cellExpr ];
 		(* FIXME: Can we get rid of the need for this UUID, and use BoxReference-something? *)
 		FrontEnd`MoveCursorToInputField[ nbo, uuid ]
 	];
@@ -1501,11 +1484,11 @@ insertPersonaTemplate[ parent_CellObject, nbo_NotebookObject ] :=
 insertPersonaTemplate[ name_String, cell_CellObject ] := insertPersonaTemplate[ name, cell, parentNotebook @ cell ];
 
 insertPersonaTemplate[ name_String, parent_CellObject, nbo_NotebookObject ] :=
-	Module[ { uuid, cellexpr },
+	Module[ { uuid, cellExpr },
 		resolveInlineReferences @ ParentCell @ parent;
 		uuid = CreateUUID[ ];
-		cellexpr = personaTemplateCell[ name, "Input", uuid ];
-		NotebookWrite[ parent, cellexpr ];
+		cellExpr = personaTemplateCell[ name, "Input", uuid ];
+		NotebookWrite[ parent, cellExpr ];
 		FrontEnd`MoveCursorToInputField[ nbo, uuid ]
 	];
 
@@ -1551,11 +1534,11 @@ setModifierState[state_, "Input", input_, params_] := (
 
 setModifierState[state_, "Chosen", input_, params_] :=
 Enclose[
-	With[{cellobj = EvaluationCell[]},
+	With[{cellObj = EvaluationCell[]},
 		state = "Chosen";
-		SelectionMove[cellobj, All, Cell];
+		SelectionMove[cellObj, All, Cell];
 		FrontEndExecute[FrontEnd`FrontEndToken["MoveNext"]];
-		CurrentValue[cellobj, TaggingRules] = <| "PromptModifierName" -> input, "PromptArguments" -> params |>;
+		CurrentValue[cellObj, TaggingRules] = <| "PromptModifierName" -> input, "PromptArguments" -> params |>;
 	]
 	,
 	throwInternalFailure[ setModifierState[state, "Chosen", input, params], ## ] &
@@ -1600,7 +1583,7 @@ modifierTemplateBoxes[version: 1, input_, params_, state_, uuid_, opts: OptionsP
 								System`CommitAction -> (modifierCommitAction[#, input, params, state]&),
 								BaselinePosition -> Baseline,
 								FieldSize               -> { { 15, Infinity }, Automatic },
-								FieldHint               -> "PromptName", (* FIXME: Is this right? *)
+								FieldHint               -> tr[ "InlineReferencesFieldHint" ], (* FIXME: Is this right? *)
 								BaseStyle               -> $inputFieldStyle,
 								Appearance              -> "Frameless",
 								(*ContentPadding          -> False,*)
@@ -1695,11 +1678,11 @@ insertModifierTemplate[ cell_CellObject ] :=
     ];
 
 insertModifierTemplate[ parent_CellObject, nbo_NotebookObject ] :=
-	Module[ { uuid, cellexpr },
+	Module[ { uuid, cellExpr },
 		resolveInlineReferences @ parent;
 		uuid = CreateUUID[ ];
-		cellexpr = modifierTemplateCell[ "", {}, "Input", uuid ];
-		NotebookWrite[ nbo, cellexpr ];
+		cellExpr = modifierTemplateCell[ "", {}, "Input", uuid ];
+		NotebookWrite[ nbo, cellExpr ];
 		(* FIXME: Can we get rid of the need for this UUID, and use BoxReference-something? *)
 		FrontEnd`MoveCursorToInputField[ nbo, uuid ]
 	];
@@ -1707,11 +1690,11 @@ insertModifierTemplate[ parent_CellObject, nbo_NotebookObject ] :=
 insertModifierTemplate[ name_String, cell_CellObject ] := insertModifierTemplate[ name, cell, parentNotebook @ cell ];
 
 insertModifierTemplate[ name_String, parent_CellObject, nbo_NotebookObject ] :=
-	Module[ { uuid, cellexpr },
+	Module[ { uuid, cellExpr },
 		resolveInlineReferences @ ParentCell @ parent;
 		uuid = CreateUUID[ ];
-		cellexpr = modifierTemplateCell[ name, {}, "Input", uuid ];
-		NotebookWrite[ parent, cellexpr ];
+		cellExpr = modifierTemplateCell[ name, {}, "Input", uuid ];
+		NotebookWrite[ parent, cellExpr ];
 		FrontEnd`MoveCursorToInputField[ nbo, uuid ]
 	];
 
@@ -1763,11 +1746,11 @@ setFunctionState[state_, "Input", input_, params_] := (
 
 setFunctionState[state_, "Chosen", input_, params_] :=
 Enclose[
-	With[{cellobj = EvaluationCell[]},
+	With[{cellObj = EvaluationCell[]},
 		state = "Chosen";
-		SelectionMove[cellobj, All, Cell];
+		SelectionMove[cellObj, All, Cell];
 		FrontEndExecute[FrontEnd`FrontEndToken["MoveNext"]];
-		CurrentValue[cellobj, TaggingRules] = <| "PromptFunctionName" -> input, "PromptArguments" -> params |>;
+		CurrentValue[cellObj, TaggingRules] = <| "PromptFunctionName" -> input, "PromptArguments" -> params |>;
 	]
 	,
 	throwInternalFailure[ setFunctionState[state, "Chosen", input, params], ## ]&
@@ -1815,7 +1798,7 @@ functionTemplateBoxes[version: 1, input_, params_, state_, uuid_, opts: OptionsP
 								System`CommitAction -> (functionCommitAction[#, input, params, state]&),
 								BaselinePosition -> Baseline,
 								FieldSize               -> { { 15, Infinity }, Automatic },
-								FieldHint               -> "PromptName", (* FIXME: Is this right? *)
+								FieldHint               -> tr[ "InlineReferencesFieldHint" ], (* FIXME: Is this right? *)
 								BaseStyle               -> $inputFieldStyle,
 								Appearance              -> "Frameless",
 								(*ContentPadding          -> False,*)
@@ -1916,11 +1899,11 @@ insertFunctionTemplate[ cell_CellObject ] :=
     ];
 
 insertFunctionTemplate[ parent_CellObject, nbo_NotebookObject ] :=
-	Module[ { uuid, cellexpr },
+	Module[ { uuid, cellExpr },
 		resolveInlineReferences @ parent;
 		uuid = CreateUUID[ ];
-		cellexpr = functionTemplateCell[ "", {}, "Input", uuid ];
-		NotebookWrite[ nbo, cellexpr ];
+		cellExpr = functionTemplateCell[ "", {}, "Input", uuid ];
+		NotebookWrite[ nbo, cellExpr ];
 		(* FIXME: Can we get rid of the need for this UUID, and use BoxReference-something? *)
 		FrontEnd`MoveCursorToInputField[ nbo, uuid ]
 	];
@@ -1928,11 +1911,11 @@ insertFunctionTemplate[ parent_CellObject, nbo_NotebookObject ] :=
 insertFunctionTemplate[ name_String, cell_CellObject ] := insertFunctionTemplate[ name, cell, parentNotebook @ cell ];
 
 insertFunctionTemplate[ name_String, parent_CellObject, nbo_NotebookObject ] :=
-	Module[ { uuid, cellexpr },
+	Module[ { uuid, cellExpr },
 		resolveInlineReferences @ ParentCell @ parent;
 		uuid = CreateUUID[ ];
-		cellexpr = functionTemplateCell[ name, {}, "Input", uuid ];
-		NotebookWrite[ parent, cellexpr ];
+		cellExpr = functionTemplateCell[ name, {}, "Input", uuid ];
+		NotebookWrite[ parent, cellExpr ];
 		FrontEnd`MoveCursorToInputField[ nbo, uuid ]
 	];
 
@@ -1959,11 +1942,11 @@ setWLState[state_, "Input", input_] := (
 
 setWLState[state_, "Chosen", input_] :=
 Enclose[
-	With[{cellobj = EvaluationCell[]},
+	With[{cellObj = EvaluationCell[]},
 		state = "Chosen";
-		SelectionMove[cellobj, All, Cell];
+		SelectionMove[cellObj, All, Cell];
 		FrontEndExecute[FrontEnd`FrontEndToken["MoveNext"]];
-		CurrentValue[cellobj, TaggingRules] = <| "WLCode" -> input |>;
+		CurrentValue[cellObj, TaggingRules] = <| "WLCode" -> input |>;
 	]
 	,
 	throwInternalFailure[ setWLState[state, "Chosen", input], ## ]&
@@ -2104,11 +2087,11 @@ insertWLTemplate[ cell_CellObject ] :=
     insertWLTemplate[ cell, parentNotebook @ cell ];
 
 insertWLTemplate[ parent_CellObject, nbo_NotebookObject ] :=
-	Module[ { uuid, cellexpr },
+	Module[ { uuid, cellExpr },
 		resolveInlineReferences @ parent;
 		uuid = CreateUUID[ ];
-		cellexpr = wlTemplateCell[ "", "Input", uuid ];
-		NotebookWrite[ nbo, cellexpr ];
+		cellExpr = wlTemplateCell[ "", "Input", uuid ];
+		NotebookWrite[ nbo, cellExpr ];
 		(* FIXME: Can we get rid of the need for this UUID, and use BoxReference-something? *)
 		FrontEnd`MoveCursorToInputField[ nbo, uuid ]
 	];
@@ -2116,11 +2099,11 @@ insertWLTemplate[ parent_CellObject, nbo_NotebookObject ] :=
 insertWLTemplate[ name_String, cell_CellObject ] := insertWLTemplate[ name, cell, parentNotebook @ cell ];
 
 insertWLTemplate[ name_String, parent_CellObject, nbo_NotebookObject ] :=
-	Module[ { uuid, cellexpr },
+	Module[ { uuid, cellExpr },
 		resolveInlineReferences @ ParentCell @ parent;
 		uuid = CreateUUID[ ];
-		cellexpr = wlTemplateCell[ name, "Input", uuid ];
-		NotebookWrite[ parent, cellexpr ];
+		cellExpr = wlTemplateCell[ name, "Input", uuid ];
+		NotebookWrite[ parent, cellExpr ];
 		FrontEnd`MoveCursorToInputField[ nbo, uuid ]
 	];
 
@@ -2132,10 +2115,10 @@ $cloudInlineReferenceButtons = Block[ { NotebookTools`Mousedown = Mouseover[ #1,
     Grid[
         {
             {
-                Style[ "Insert:", "Text" ],
+                Style[ tr[ "InlineReferencesInsertLabel" ], "Text" ],
                 Button[
                     First @ personaTemplateBoxes[ 1, "Persona", "Chosen", "PersonaInsertButton" ],
-                    With[ { name = InputString[ "Enter a persona name" ], uuid = CreateUUID[ ] },
+                    With[ { name = InputString[ tr[ "InlineReferencesInsertPersonaPrompt" ] ], uuid = CreateUUID[ ] },
                         If[ MemberQ[ $personaNames, name ],
                             NotebookWrite[
                                 EvaluationNotebook[ ],
@@ -2150,7 +2133,9 @@ $cloudInlineReferenceButtons = Block[ { NotebookTools`Mousedown = Mouseover[ #1,
                             ] = name;
                             ,
                             If[ StringQ @ name,
-                                MessageDialog[ "No persona with name \""<>name<>"\" found.\"" ]
+                                MessageDialog @ trStringTemplate[ "InlineReferencesInsertPersonaFail" ][
+                                    <| "name" -> name |>
+                                ]
                             ]
                         ]
                     ],
@@ -2159,7 +2144,7 @@ $cloudInlineReferenceButtons = Block[ { NotebookTools`Mousedown = Mouseover[ #1,
                 ],
                 Button[
                     First @ modifierTemplateBoxes[ 1, "Modifier", { }, "Chosen", "ModifierInsertButton" ],
-                    With[ { s = InputString[ "Enter a modifier prompt" ], uuid = CreateUUID[ ] },
+                    With[ { s = InputString[ tr[ "InlineReferencesInsertModifierPrompt" ] ], uuid = CreateUUID[ ] },
                         Replace[
                             functionInputSetting @ s,
                             { name_String, args___String } :>
@@ -2176,7 +2161,9 @@ $cloudInlineReferenceButtons = Block[ { NotebookTools`Mousedown = Mouseover[ #1,
                                     ]
                                     ,
                                     If[ StringQ @ name,
-                                        MessageDialog[ "No modifier with name \""<>name<>"\" found.\"" ]
+                                        MessageDialog @ trStringTemplate[ "InlineReferencesInsertModifierFail" ][
+                                            <| "name" -> name |>
+                                        ]
                                     ]
                                 ]
                         ]
@@ -2186,7 +2173,7 @@ $cloudInlineReferenceButtons = Block[ { NotebookTools`Mousedown = Mouseover[ #1,
                 ],
                 Button[
                     First @ functionTemplateBoxes[ 1, "Function", { }, "Chosen", "FunctionInsertButton" ],
-                    With[ { s = InputString[ "Enter a function prompt" ], uuid = CreateUUID[ ] },
+                    With[ { s = InputString[ tr[ "InlineReferencesInsertFunctionPrompt" ] ], uuid = CreateUUID[ ] },
                         Replace[
                             functionInputSetting @ s,
                             { name_String, args___String } :>
@@ -2203,7 +2190,9 @@ $cloudInlineReferenceButtons = Block[ { NotebookTools`Mousedown = Mouseover[ #1,
                                     ]
                                     ,
                                     If[ StringQ @ name,
-                                        MessageDialog[ "No function with name \""<>name<>"\" found.\"" ]
+                                        MessageDialog @ trStringTemplate[ "InlineReferencesInsertFunctionFail" ][
+                                            <| "name" -> name |>
+                                        ]
                                     ]
                                 ]
                         ]
@@ -2222,7 +2211,7 @@ $cloudInlineReferenceButtons = Block[ { NotebookTools`Mousedown = Mouseover[ #1,
 (*Package Footer*)
 
 
-If[ Wolfram`ChatbookInternal`$BuildingMX,
+addToMXInitialization[
     Null
 ];
 

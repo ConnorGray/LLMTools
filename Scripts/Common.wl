@@ -1,5 +1,3 @@
-(* cSpell: ignore samevers *)
-
 BeginPackage[ "Wolfram`ChatbookScripts`" ];
 
 (* :!CodeAnalysis::BeginBlock:: *)
@@ -107,6 +105,9 @@ messageString[ ___ ] := "-- Message text not found --";
 (* ::Section::Closed:: *)
 (*Definitions*)
 
+$$ws = WhitespaceCharacter...;
+$$id = "\"" ~~ Except[ "\"" ].. ~~ "\"";
+
 $envSHA = SelectFirst[
     { Environment[ "GITHUB_SHA" ], Environment[ "BUILD_VCS_NUMBER_WolframLanguage_Paclets_Chatbook_PacChatbook" ] },
     StringQ
@@ -119,7 +120,7 @@ $inCICD = StringQ @ $envSHA;
 (*gitCommand*)
 gitCommand[ { cmd__String }, dir_ ] :=
     Enclose @ Module[ { res },
-        res = RunProcess[ { "git", cmd }, ProcessDirectory -> dir ];
+        res = RunProcess[ { "git", cmd }, ProcessDirectory -> ExpandFileName @ dir ];
         ConfirmAssert[ res[ "ExitCode" ] === 0 ];
         StringTrim @ ConfirmBy[ res[ "StandardOutput" ], StringQ ]
     ];
@@ -169,7 +170,7 @@ actionURL[ ] := Enclose[
 (*updatePacletInfo*)
 updatePacletInfo[ dir_ ] /; $inCICD := Enclose[
     Module[
-        { cs, file, string, id, date, url, run, cmt, new },
+        { cs, file, string, id, date, url, run, cmt, oldID, new },
 
         cs     = ConfirmBy[ Echo[ #1, "Update PacletInfo [" <> ToString @ #2 <> "]: " ], StringQ, #2 ] &;
         file   = cs[ FileNameJoin @ { dir, "PacletInfo.wl" }, "Original PacletInfo" ];
@@ -180,13 +181,14 @@ updatePacletInfo[ dir_ ] /; $inCICD := Enclose[
         url    = cs[ releaseURL @ file, "ReleaseURL" ];
         run    = cs[ actionURL[ ], "ActionURL" ];
         cmt    = cs[ commitURL @ id, "CommitURL" ];
+        oldID  = cs[ PacletObject[ Flatten @ File @ dir ][ "ReleaseID" ], "OldReleaseID" ];
 
         new = cs[
             StringReplace[
                 string,
                 {
                     "\r\n"           -> "\n",
-                    "$RELEASE_ID$"   -> id,
+                    oldID            -> id,
                     "$RELEASE_DATE$" -> date,
                     "$RELEASE_URL$"  -> url,
                     "$ACTION_URL$"   -> run,
@@ -217,8 +219,28 @@ updatePacletInfo[ dir_ ] /; $inCICD := Enclose[
     ]
 ];
 
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*setPacletReleaseID*)
+(* :!CodeAnalysis::Disable::LeakedVariable:: *)
+setPacletReleaseID[ dir_ ] :=
+    setPacletReleaseID[ dir, releaseID @ dir ];
 
+setPacletReleaseID[ dir_, id_String? StringQ ] :=
+    Enclose @ Module[ { file, bytes, string, new },
+        file = ConfirmBy[ FileNameJoin @ { dir, "PacletInfo.wl" }, FileExistsQ, "PacletInfoFile" ];
+        bytes = ConfirmBy[ ReadByteArray @ file, ByteArrayQ, "ByteArray" ];
+        Quiet @ Close @ file;
+        string = ConfirmBy[ ByteArrayToString @ bytes, StringQ, "String" ];
+        new = StringReplace[ string, before: ("\"ReleaseID\""~~$$ws~~"->"~~$$ws) ~~ $$id :> before<>"\""<>id<>"\"" ];
+        cicd`ConsoleNotice @ SequenceForm[ "Setting paclet release ID: ", id ];
+        WithCleanup[ BinaryWrite[ file, StringToByteArray @ new ], Close @ file ];
+        id
+    ];
 
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*updateReleaseInfoCell*)
 updateReleaseInfoCell[ dir_, url_, cmt_, run_ ] /;
     Environment[ "GITHUB_WORKFLOW" ] === "Release" :=
     UsingFrontEnd @ Enclose @ Module[ { cells, nbFile, nbo, cell },
@@ -332,7 +354,7 @@ checkResult[ eval: (sym_Symbol)[ args___ ] ] :=
             Print[ "::notice::Exporting stack data: ", stacks ];
             Export[
                 stacks,
-                $stackHistory,
+                First @ $stackHistory,
                 "WXF",
                 PerformanceGoal -> "Size"
             ];
@@ -378,7 +400,14 @@ Print[ "ResourceSystemBase: ", $ResourceSystemBase ];
 $defNB = File @ FileNameJoin @ { $pacletDir, "ResourceDefinition.nb" };
 Print[ "Definition Notebook: ", $defNB ];
 
-PacletDirectoryLoad @ $pacletDir;
+cicd`ScriptConfirmBy[ PacletDirectoryLoad @ $pacletDir, MemberQ @ $pacletDir ];
+cicd`ScriptConfirmAssert[
+    StringStartsQ[ FindFile[ "Wolfram`Chatbook`" ], $pacletDir ],
+    TemplateApply[
+        "Chatbook context points to \"`1`\" which is not contained in the expected paclet directory \"`2`\".",
+        { FindFile["Wolfram`Chatbook`"], $pacletDir }
+    ]
+];
 
 $loadedDefinitions = True;
 

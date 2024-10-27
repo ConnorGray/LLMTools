@@ -1,35 +1,21 @@
 (* ::Section::Closed:: *)
 (*Package Header*)
 BeginPackage[ "Wolfram`Chatbook`Models`" ];
-
-(* cSpell: ignore chatgpt *)
+Begin[ "`Private`" ];
 
 (* :!CodeAnalysis::BeginBlock:: *)
 
-HoldComplete[
-    `chatModelQ;
-    `chooseDefaultModelName;
-    `getModelList;
-    `modelDisplayName;
-    `multimodalModelQ;
-    `snapshotModelQ;
-    `standardizeModelData;
-    `resolveFullModelSpec;
-    `toModelName;
-];
-
-Begin[ "`Private`" ];
-
-Needs[ "Wolfram`Chatbook`"          ];
-Needs[ "Wolfram`Chatbook`Actions`"  ];
-Needs[ "Wolfram`Chatbook`Common`"   ];
-Needs[ "Wolfram`Chatbook`Dynamics`" ];
-Needs[ "Wolfram`Chatbook`Services`" ];
-Needs[ "Wolfram`Chatbook`UI`"       ];
+Needs[ "Wolfram`Chatbook`"         ];
+Needs[ "Wolfram`Chatbook`Actions`" ];
+Needs[ "Wolfram`Chatbook`Common`"  ];
+Needs[ "Wolfram`Chatbook`UI`"      ];
 
 (* ::**************************************************************************************************************:: *)
 (* ::Section::Closed:: *)
 (*Configuration*)
+$defaultLLMKitService  := Replace[ $llmKitService, Except[ _String ] :> "AzureOpenAI" ];
+$defaultLLMKitModelName = "gpt-4o-2024-05-13";
+
 $$modelVersion = DigitCharacter.. ~~ (("." ~~ DigitCharacter...) | "");
 
 $defaultModelIcon = "";
@@ -123,18 +109,25 @@ $fallbackModelList = { "gpt-3.5-turbo", "gpt-3.5-turbo-16k", "gpt-4" };
 (* ::Subsection::Closed:: *)
 (*chatModelQ*)
 chatModelQ // beginDefinition;
-chatModelQ[ _? (modelContains[ "instruct" ]) ] := False;
-chatModelQ[ _? (modelContains[ StartOfString~~("gpt"|"ft:gpt") ]) ] := True;
+chatModelQ[ wordsPattern[ "instruct"|"realtime" ] ] := False;
+chatModelQ[ wordsPattern[ StartOfString~~("gpt"|"ft:gpt"|"chatgpt-4o") ] ] := True;
 chatModelQ[ _String ] := False;
 chatModelQ // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
-(* ::Subsubsection::Closed:: *)
-(*modelContains*)
-modelContains // beginDefinition;
-modelContains[ patt_ ] := modelContains[ #, patt ] &;
-modelContains[ m_String, patt_ ] := StringContainsQ[ m, WordBoundary~~patt~~WordBoundary, IgnoreCase -> True ];
-modelContains // endDefinition;
+(* ::Subsection::Closed:: *)
+(*o1ModelQ*)
+o1ModelQ // beginDefinition;
+
+o1ModelQ[ model_ ] := Enclose[
+    o1ModelQ[ model ] = StringContainsQ[
+        ConfirmBy[ toModelName @ model, StringQ, "Name" ],
+        WordBoundary~~"o1"~~WordBoundary
+    ],
+    throwInternalFailure
+];
+
+o1ModelQ // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsection::Closed:: *)
@@ -146,8 +139,21 @@ modelName // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsection::Closed:: *)
+(*serviceName*)
+serviceName // beginDefinition;
+serviceName[ KeyValuePattern[ "Model" -> model_ ] ] := serviceName @ model;
+serviceName[ { service_String, _String | $$unspecified } ] := service;
+serviceName[ KeyValuePattern[ "Service" -> service_String ] ] := service;
+serviceName[ _String | _Association | $$unspecified ] := "OpenAI";
+serviceName // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
 (*toModelName*)
 toModelName // beginDefinition;
+
+toModelName[ KeyValuePattern[ "Model" -> model_ ] ] :=
+    toModelName @ model;
 
 toModelName[ KeyValuePattern @ { "Service" -> service_, "Name"|"Model" -> model_ } ] :=
     toModelName @ { service, model };
@@ -169,6 +175,9 @@ toModelName[ name_String? StringQ ] := toModelName[ name ] =
         ]
     ];
 
+toModelName[ missing_Missing ] :=
+    missing;
+
 toModelName // endDefinition;
 
 toModelName0 // beginDefinition;
@@ -180,24 +189,16 @@ toModelName0 // endDefinition;
 (* ::Subsection::Closed:: *)
 (*snapshotModelQ*)
 snapshotModelQ // beginDefinition;
-
-snapshotModelQ[ name_String? fineTunedModelQ ] := snapshotModelQ[ name ] =
-    snapshotModelQ @ StringSplit[ name, ":" ][[ 2 ]];
-
-snapshotModelQ[ name_String? StringQ ] := snapshotModelQ[ name ] =
-    StringMatchQ[ toModelName @ name, "gpt-"~~__~~"-"~~Repeated[ DigitCharacter, { 4 } ]~~(""|"-preview") ];
-
-snapshotModelQ[ other_ ] :=
-    With[ { name = toModelName @ other }, snapshotModelQ @ name /; StringQ @ name ];
-
+snapshotModelQ[ model_ ] := snapshotModelQ[ model, modelNameData @ model ];
+snapshotModelQ[ model_, KeyValuePattern[ "Date" -> date_ ] ] := modelDateSpecQ @ date;
 snapshotModelQ // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsection::Closed:: *)
 (*fineTunedModelQ*)
 fineTunedModelQ // beginDefinition;
-fineTunedModelQ[ name_String ] := StringMatchQ[ toModelName @ name, "ft:"~~__~~":"~~__ ];
-fineTunedModelQ[ other_ ] := With[ { name = toModelName @ other }, fineTunedModelQ @ name /; StringQ @ name ];
+fineTunedModelQ[ model_ ] := fineTunedModelQ[ model, modelNameData @ model ];
+fineTunedModelQ[ model_, KeyValuePattern[ "FineTuned" -> bool: True|False ] ] := bool;
 fineTunedModelQ // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
@@ -205,52 +206,296 @@ fineTunedModelQ // endDefinition;
 (*multimodalModelQ*)
 (* FIXME: this should be a queryable property from LLMServices: *)
 multimodalModelQ // beginDefinition;
-multimodalModelQ[ name_String? StringQ ] := StringContainsQ[ toModelName @ name, "gpt-"~~$$modelVersion~~"-vision" ];
-multimodalModelQ[ other_ ] := With[ { name = toModelName @ other }, multimodalModelQ @ name /; StringQ @ name ];
+
+multimodalModelQ[ KeyValuePattern[ "Multimodal" -> multimodal_ ] ] :=
+    TrueQ @ multimodal;
+
+multimodalModelQ[ "gpt-4-turbo" ] :=
+    True;
+
+multimodalModelQ[ name_String? StringQ ] /; StringStartsQ[ name, "claude-3" ] :=
+    True;
+
+multimodalModelQ[ name_String? StringQ ] /; StringStartsQ[ name, "gpt-4o"|"gpt-4o-mini"|"chatgpt-4o" ] :=
+    True;
+
+multimodalModelQ[ name_String? StringQ ] /; StringStartsQ[ name, "gpt-4-turbo-" ] :=
+    StringMatchQ[ name, "gpt-4-turbo-"~~DatePattern @ { "Year", "Month", "Day" } ];
+
+multimodalModelQ[ name_String? StringQ ] :=
+    StringContainsQ[ toModelName @ name, WordBoundary~~"vision"~~WordBoundary, IgnoreCase -> True ];
+
+multimodalModelQ[ other_ ] :=
+    With[ { name = toModelName @ other },
+        multimodalModelQ @ name /; StringQ @ name
+    ];
+
 multimodalModelQ // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*modelNameData*)
+modelNameData // beginDefinition;
+
+modelNameData[ data: KeyValuePattern @ {
+    "Name"         -> _String,
+    "BaseName"     -> _String,
+    "Date"         -> _? modelDateSpecQ | None,
+    "Preview"      -> True|False,
+    "Family"       -> _String|None,
+    "FineTuned"    -> True|False,
+    "FineTuneName" -> _String|None,
+    "Organization" -> _String|None,
+    "ID"           -> _String|None
+} ] := modelNameData[ data ] = KeySort @ data;
+
+modelNameData[ as: KeyValuePattern[ "Name" -> name_String ] ] :=
+    <| modelNameData @ name, DeleteCases[ as, $$unspecified|None ] |>;
+
+modelNameData[ model0_ ] := Enclose[
+    Module[ { model, defaults, data },
+
+        model = ConfirmBy[ toModelName @ model0, StringQ, "Model" ];
+
+        defaults = <|
+            "Name"         -> model,
+            "Date"         -> None,
+            "Preview"      -> False,
+            "Family"       -> None,
+            "FineTuned"    -> False,
+            "FineTuneName" -> None,
+            "Organization" -> None,
+            "ID"           -> None
+        |>;
+
+        data = ConfirmBy[
+            If[ StringMatchQ[ model, "ft:" ~~ __ ~~ ":" ~~ __ ],
+                fineTunedModelNameData @ model,
+                modelNameData0 @ model
+            ],
+            AssociationQ,
+            "Data"
+        ];
+
+        data = <| defaults, data |>;
+        data[ "DisplayName" ] = ConfirmBy[ createModelDisplayName @ data, StringQ, "DisplayName" ];
+        data[ "Family" ] = ConfirmMatch[ chooseModelFamily @ data, _String | None, "Family" ];
+        data //= KeySort;
+
+        modelNameData[ model0 ] = ConfirmBy[ data, AssociationQ, "FullData" ]
+    ],
+    throwInternalFailure
+];
+
+modelNameData // endDefinition;
+
+
+modelNameData0 // beginDefinition;
+
+modelNameData0[ model_String ] :=
+    modelNameData0 @ StringSplit[
+        StringReplace[ model, "claude-"~~a:DigitCharacter..~~"-"~~b:DigitCharacter.. :> "claude-"<>a<>"."<>b ],
+        "-"|" "
+    ];
+
+modelNameData0[ { before___, "chatgpt", after___ } ] :=
+    modelNameData0 @ { before, "ChatGPT", after };
+
+modelNameData0[ { "gpt", rest___ } ] :=
+    modelNameData0 @ { "GPT", rest };
+
+modelNameData0[ { before__, s_String } ] :=
+    With[ { date = modelDate @ s },
+        <| "Date" -> date, modelNameData0 @ { before } |> /; modelDateSpecQ @ date
+    ];
+
+modelNameData0[ { before__, y_String, m_String, d_String } ] :=
+    With[ { date = StringRiffle[ { y, m, d }, "-" ] },
+        <| "Date" -> DateObject @ date, modelNameData0 @ { before } |> /;
+            StringMatchQ[ date, DatePattern @ { "Year", "Month", "Day" } ]
+    ];
+
+modelNameData0[ { before__, "preview" } ] :=
+    <| "Preview" -> True, modelNameData0 @ { before } |>;
+
+modelNameData0[ { before__, s_String, "vision" } ] :=
+    With[ { date = modelDate @ s },
+        <| "Date" -> date, modelNameData0 @ { before, "vision" } |> /; modelDateSpecQ @ date
+    ];
+
+modelNameData0[ { "GPT", version_String, rest___ } ] /; StringStartsQ[ version, DigitCharacter.. ] :=
+    modelNameData0 @ { "GPT-"<>version, rest };
+
+modelNameData0[ { "GPT-4o", rest___ } ] :=
+    modelNameData0 @ { "GPT-4", "Omni", rest };
+
+modelNameData0[ { before___, gpt_String, "4o", after___ } ] /; StringEndsQ[ gpt, "gpt", IgnoreCase -> True ] :=
+    modelNameData0 @ { before, gpt<>"-4", "Omni", after };
+
+modelNameData0[ parts: { __String } ] :=
+	<| "BaseName" -> StringRiffle @ Capitalize @ parts |>;
+
+modelNameData0 // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*chooseModelFamily*)
+$$version         = ("v"|"") ~~ DigitCharacter.. ~~ Repeated[ "." ~~ DigitCharacter.., { 0, Infinity } ];
+$$parameterCount0 = DigitCharacter.. ~~ Repeated[ "." ~~ DigitCharacter.., { 0, Infinity } ] ~~ ("b"|"m"|"");
+$$parameterCount  = ((DigitCharacter.. ~~ "x") | "") ~~ $$parameterCount0;
+$$versionOrParams = $$version | $$parameterCount | "";
+
+chooseModelFamily // beginDefinition;
+chooseModelFamily[ as_Association ] := chooseModelFamily @ as[ "Name" ];
+chooseModelFamily[ name_String ] := chooseModelFamily[ name ] = chooseModelFamily0 @ name;
+chooseModelFamily // endDefinition;
+
+chooseModelFamily0 // beginDefinition;
+
+chooseModelFamily0[ wordsPattern[ "Phi"       ~~ $$versionOrParams ] ] := "Phi";
+chooseModelFamily0[ wordsPattern[ "Llama"     ~~ $$versionOrParams ] ] := "Llama";
+chooseModelFamily0[ wordsPattern[ "Gemma"     ~~ $$versionOrParams ] ] := "Gemma";
+chooseModelFamily0[ wordsPattern[ "CodeGemma" ~~ $$versionOrParams ] ] := "Gemma";
+chooseModelFamily0[ wordsPattern[ "Qwen"      ~~ $$versionOrParams ] ] := "Qwen";
+chooseModelFamily0[ wordsPattern[ "Nemotron"  ~~ $$versionOrParams ] ] := "Nemotron";
+chooseModelFamily0[ wordsPattern[ "Mistral"   ~~ $$versionOrParams ] ] := "Mistral";
+
+chooseModelFamily0[ wordsPattern[ { "DeepSeek", "Coder", $$versionOrParams } ] ] := "DeepSeekCoder";
+
+chooseModelFamily0[ _String ] := None;
+
+chooseModelFamily0 // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*modelDateSpecQ*)
+modelDateSpecQ // beginDefinition;
+modelDateSpecQ[ date_DateObject ] := DateObjectQ @ date;
+modelDateSpecQ[ "Latest" ] := True;
+modelDateSpecQ[ _ ] := False
+modelDateSpecQ // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*createModelDisplayName*)
+createModelDisplayName // beginDefinition;
+
+createModelDisplayName[ KeyValuePattern @ {
+    "BaseName"     -> base_String,
+    "Date"         -> date0_,
+    "Preview"      -> preview0_,
+    "Organization" -> org0_,
+    "FineTuneName" -> name0_,
+    "ID"           -> id0_
+} ] :=
+    Module[ { date, preview, id, org, ftName, ftID },
+
+        date    = Replace[ modelDateString @ date0, Except[ _String? StringQ ] -> Nothing ];
+        preview = If[ TrueQ @ preview0, "(Preview)", Nothing ];
+        id      = If[ StringQ @ id0 && id0 =!= "", id0, Nothing ];
+        org     = If[ StringQ @ org0 && ! MatchQ[ org0, ""|"personal" ], org0, Nothing ];
+        ftName  = If[ StringQ @ name0 && name0 =!= "", name0, Nothing ];
+
+        ftID = Which[
+            StringQ @ ftName && StringQ @ org, "(" <> StringRiffle[ { org, ftName }, ":" ] <> ")",
+            StringQ @ id || StringQ @ org, "(" <> StringRiffle[ { org, ftName, id }, ":" ] <> ")",
+            True, Nothing
+        ];
+
+        If[ StringQ @ ftID, date = Nothing ];
+
+        StringReplace[
+            StringRiffle[ { base, date, preview, ftID }, " " ],
+            {
+                ") (Preview)" -> " Preview)",
+                ") (" -> ", "
+            }
+        ]
+    ];
+
+createModelDisplayName // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsubsection::Closed:: *)
+(*modelDateString*)
+modelDateString // beginDefinition;
+modelDateString[ None ] := None;
+modelDateString[ "Latest" ] := "(Latest)";
+modelDateString[ date_DateObject ] := modelDateString[ date, Quiet @ DateString[ date, "LocaleDateShort" ] ];
+modelDateString[ date_DateObject, string_String ] := "(" <> string <> ")";
+modelDateString[ date_DateObject, _ ] := With[ { s = DateString @ date }, modelDateString[ date, s ] /; StringQ @ s ];
+modelDateString // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*fineTunedModelNameData*)
+fineTunedModelNameData // beginDefinition;
+
+fineTunedModelNameData[ name_String ] :=
+    fineTunedModelNameData @ StringSplit[ name, ":" ];
+
+fineTunedModelNameData[ { "ft", model_, org_, name_, id_ } ] := <|
+    modelNameData0 @ model,
+    "Organization" -> org,
+    "ID"           -> id,
+    "FineTuneName" -> name,
+    "FineTuned"    -> True
+|>;
+
+fineTunedModelNameData[ { "ft", rest__String } ] :=
+    fineTunedModelNameData @ { rest };
+
+fineTunedModelNameData[ other: { __String } ] := <|
+    modelNameData0 @ StringRiffle[ other, ":" ],
+    "FineTuned" -> True
+|>;
+
+fineTunedModelNameData // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsection::Closed:: *)
 (*modelDisplayName*)
 modelDisplayName // beginDefinition;
+modelDisplayName[ model_ ] := modelDisplayName[ model, modelNameData @ model ];
+modelDisplayName[ model_, KeyValuePattern[ "DisplayName" -> name_String ] ] := name;
+modelDisplayName // endDefinition;
 
-modelDisplayName[ KeyValuePattern[ "DisplayName" -> name_String ] ] :=
-    name;
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*modelDate*)
+modelDate // beginDefinition;
 
-modelDisplayName[ KeyValuePattern[ "Name" -> name_String ] ] :=
-    modelDisplayName @ name;
+modelDate[ KeyValuePattern[ "Date" -> date_? modelDateSpecQ ] ] :=
+    date;
 
-modelDisplayName[{name_?StringQ, settings_?AssociationQ}] :=
-	modelDisplayName[name]
+modelDate[ KeyValuePattern[ "Name" -> name_String ] ] :=
+    modelDate @ name;
 
-modelDisplayName[ model_String ] := modelDisplayName[ model ] =
-	If[ StringMatchQ[ model, "ft:"~~__~~":"~~__ ],
-        fineTunedModelName @ model,
-        modelDisplayName @ StringSplit[ model, "-"|" " ]
+modelDate[ model_String ] := modelDate[ model ] =
+    modelDate @ StringSplit[ model, "-"|" " ];
+
+modelDate[ { ___, "latest" } ] :=
+    "Latest";
+
+(* Hack for OpenAI's poor choice of 4 digit dates: *)
+modelDate[ { ___, "0125" } ] :=
+    DateObject @ { 2024, 1, 25 };
+
+modelDate[ { ___, date_String } ] /; StringMatchQ[ date, Repeated[ DigitCharacter, { 4 } ] ] :=
+    DateObject @ Flatten @ { 2023, ToExpression @ StringPartition[ date, 2 ] };
+
+modelDate[ { ___, date_String } ] /; StringMatchQ[ date, Repeated[ DigitCharacter, { 8 } ] ] :=
+    DateObject @ StringInsert[ date, "-", { 5, 7 } ];
+
+modelDate[ { ___, y_String, m_String, d_String } ] :=
+    With[ { date = StringRiffle[ { y, m, d }, "-" ] },
+        DateObject @ StringRiffle[ { y, m, d }, "-" ] /; StringMatchQ[ date, DatePattern @ { "Year", "Month", "Day" } ]
     ];
 
-modelDisplayName[ { "gpt", rest___ } ] :=
-	modelDisplayName @ { "GPT", rest };
+modelDate[ { ___String } ] :=
+    None;
 
-modelDisplayName[ { before__, date_String } ] /; StringMatchQ[ date, Repeated[ DigitCharacter, { 4 } ] ] :=
-    modelDisplayName @ { before, DateObject @ Flatten @ { 0, ToExpression @ StringPartition[ date, 2 ] } };
-
-modelDisplayName[ { before__, "preview" } ] :=
-    modelDisplayName @ { before } <> " (Preview)";
-
-modelDisplayName[ { before___, date_DateObject } ] :=
-    modelDisplayName @ {
-		before,
-		"(" <> DateString[ date, "MonthName" ] <> " " <> DateString[ date, "DayShort" ] <> ")"
-	};
-
-modelDisplayName[ { "GPT", version_String, rest___ } ] /; StringStartsQ[ version, DigitCharacter.. ] :=
-    modelDisplayName @ { "GPT-"<>version, rest };
-
-modelDisplayName[ parts: { __String } ] :=
-	StringRiffle @ Capitalize @ parts;
-
-modelDisplayName // endDefinition;
+modelDate // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsubsection::Closed:: *)
@@ -296,7 +541,7 @@ modelIcon[ name_String ] /; StringStartsQ[ name, "ft:" ] :=
 modelIcon[ gpt_String ] /; StringStartsQ[ gpt, "gpt-3.5" ] :=
     RawBoxes @ TemplateBox[ { }, "ModelGPT35" ];
 
-modelIcon[ gpt_String ] /; StringStartsQ[ gpt, "gpt-4" ] :=
+modelIcon[ gpt_String ] /; StringStartsQ[ gpt, "gpt-4"|"chatgpt-4" ] :=
     RawBoxes @ TemplateBox[ { }, "ModelGPT4" ];
 
 modelIcon[ name_String ] :=
@@ -316,7 +561,9 @@ standardizeModelData[ name_String ] := standardizeModelData[ name ] =
     standardizeModelData @ <| "Name" -> name |>;
 
 standardizeModelData[ model: KeyValuePattern @ { } ] :=
-    standardizeModelData[ model ] = <|
+    standardizeModelData[ model ] = KeySort @ <|
+        modelNameData @ model,
+        "Date"        -> modelDate @ model,
         "DisplayName" -> modelDisplayName @ model,
         "FineTuned"   -> fineTunedModelQ @ model,
         "Icon"        -> modelIcon @ model,
@@ -374,8 +621,23 @@ resolveFullModelSpec // beginDefinition;
 resolveFullModelSpec[ settings: KeyValuePattern[ "Model" -> model_ ] ] :=
     resolveFullModelSpec @ model;
 
-resolveFullModelSpec[ { service_String, Automatic } ] :=
-    resolveFullModelSpec @ <| "Service" -> service, "Name" -> Automatic |>;
+resolveFullModelSpec[ { service_String, name_ } ] :=
+    resolveFullModelSpec @ <| "Service" -> service, "Name" -> name |>;
+
+resolveFullModelSpec[ model: KeyValuePattern @ { "Service" -> "LLMKit", "Name" -> $$unspecified } ] :=
+    standardizeModelData @ <|
+        model,
+        "Service"        -> $defaultLLMKitService,
+        "Name"           -> $defaultLLMKitModelName,
+        "Authentication" -> "LLMKit"
+    |>;
+
+resolveFullModelSpec[ model: KeyValuePattern[ "Service" -> "LLMKit" ] ] :=
+    standardizeModelData @ <|
+        model,
+        "Service"        -> $defaultLLMKitService,
+        "Authentication" -> "LLMKit"
+    |>;
 
 resolveFullModelSpec[ model: KeyValuePattern @ { "Service" -> service_String, "Name" -> Automatic } ] := Enclose[
     Catch @ Module[ { default, models, name },
@@ -432,8 +694,8 @@ standardizeModelName[name_String]:=name
 (* ::**************************************************************************************************************:: *)
 (* ::Section::Closed:: *)
 (*Package Footer*)
-If[ Wolfram`ChatbookInternal`$BuildingMX,
-    Null;
+addToMXInitialization[
+    Null
 ];
 
 (* :!CodeAnalysis::EndBlock:: *)

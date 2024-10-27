@@ -12,6 +12,7 @@ concurrency:
 env:
   RESOURCE_PUBLISHER_TOKEN: ${{ secrets.RESOURCE_PUBLISHER_TOKEN }}
   WOLFRAMSCRIPT_ENTITLEMENTID: ${{ secrets.WOLFRAMSCRIPT_ENTITLEMENTID }}
+  OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
 
 jobs:
 
@@ -21,7 +22,7 @@ jobs:
     timeout-minutes: 15
 
     container:
-      image: wolframresearch/wolframengine:13.3
+      image: wolframresearch/wolframengine:14.1
       options: --user root
 
     env:
@@ -29,13 +30,18 @@ jobs:
 
     steps:
     - name: Checkout
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
 
     - name: Check
       run: wolframscript -f Scripts/CheckPaclet.wls
     
     - name: Build
       run: wolframscript -f Scripts/BuildPaclet.wls
+
+    - name: InstallTestDependencies
+      run: |
+        apt-get update && apt-get install libgomp1 -y
+        wolframscript -f Scripts/InstallTestDependencies.wls
 
     - name: Test
       run: wolframscript -f Scripts/TestPaclet.wls
@@ -47,7 +53,7 @@ jobs:
     timeout-minutes: 30
 
     container:
-      image: wolframresearch/wolframengine:13.3
+      image: wolframresearch/wolframengine:14.1
       options: --user root
 
     env:
@@ -64,7 +70,7 @@ jobs:
         dpkg -i gh.deb
 
     - name: Checkout
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
 
     - name: Build
       run: wolframscript -f Scripts/BuildPaclet.wls
@@ -88,7 +94,7 @@ jobs:
     timeout-minutes: 30
 
     container:
-      image: wolframresearch/wolframengine:13.3
+      image: wolframresearch/wolframengine:14.1
       options: --user root
 
     env:
@@ -96,7 +102,10 @@ jobs:
 
     steps:
     - name: Checkout
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
+
+    - name: Unformat
+      run: wolframscript -f Scripts/UnformatFiles.wls
 
     - name: BuildMX
       run: wolframscript -f Scripts/BuildMX.wls
@@ -108,7 +117,7 @@ jobs:
       uses: WolframResearch/submit-paclet@v1.11.0
 
     - name: UploadArtifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         path: ${{ env.PACLET_BUILD_DIR }}
         if-no-files-found: ignore

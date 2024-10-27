@@ -1,39 +1,25 @@
 (* ::Section::Closed:: *)
 (*Package Header*)
 BeginPackage[ "Wolfram`Chatbook`Services`" ];
+Begin[ "`Private`" ];
 
 (* :!CodeAnalysis::BeginBlock:: *)
 
-HoldComplete[
-    `$allowConnectionDialog;
-    `$availableServices;
-    `$enableLLMServices;
-    `$serviceCache;
-    `$servicesLoaded;
-    `$useLLMServices;
-    `getAvailableServiceNames;
-    `getAvailableServices;
-    `getServiceModelList;
-    `modelListCachedQ;
-];
-
-Begin[ "`Private`" ];
-
-Needs[ "Wolfram`Chatbook`"          ];
-Needs[ "Wolfram`Chatbook`Common`"   ];
-Needs[ "Wolfram`Chatbook`Dynamics`" ];
-Needs[ "Wolfram`Chatbook`Models`"   ];
-Needs[ "Wolfram`Chatbook`UI`"       ];
+Needs[ "Wolfram`Chatbook`"        ];
+Needs[ "Wolfram`Chatbook`Common`" ];
+Needs[ "Wolfram`Chatbook`UI`"     ];
 
 $ContextAliases[ "llm`" ] = "LLMServices`";
 
 (* ::**************************************************************************************************************:: *)
 (* ::Section::Closed:: *)
 (*Configuration*)
+$llmKit               := $llmKit = $VersionNumber >= 14.1;
+$llmKitService        := LogChatTiming @ getLLMKitService[ ];
 $allowConnectionDialog = True;
 $enableLLMServices     = Automatic;
 $modelListCache        = <| |>;
-$modelSortOrder        = { "Snapshot", "FineTuned", "DisplayName" };
+$modelSortOrder        = { "Preview", "Snapshot", "FineTuned", "Date", "DisplayName" };
 $servicesLoaded        = False;
 $useLLMServices       := MatchQ[ $enableLLMServices, Automatic|True ] && TrueQ @ $llmServicesAvailable;
 $serviceCache          = None;
@@ -43,12 +29,53 @@ $llmServicesAvailable := $llmServicesAvailable = (
     PacletNewerQ[ PacletObject[ "Wolfram/LLMFunctions" ], "1.2.2" ]
 );
 
+$$llmServicesFailure = HoldPattern @ Failure[
+    LLMServices`LLMServiceInformation,
+    KeyValuePattern[ "MessageTemplate" :> LLMServices`LLMServiceInformation::corrupt ]
+];
+
+(* Used to filter out models that are known not to work with chat notebooks: *)
+$invalidModelNameParts = <|
+    "OpenAI" -> WordBoundary~~("instruct"|"realtime")~~WordBoundary
+|>;
+
 (* ::**************************************************************************************************************:: *)
 (* ::Section::Closed:: *)
 (*InvalidateServiceCache*)
 InvalidateServiceCache // beginDefinition;
 InvalidateServiceCache[ ] := catchAlways[ $serviceCache = None; updateDynamics[ { "Models", "Services" } ]; ];
 InvalidateServiceCache // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Section::Closed:: *)
+(*LLM Kit*)
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*getLLMKitService*)
+getLLMKitService // beginDefinition;
+getLLMKitService[ ] := (LLMSynthesize; getLLMKitService @ Wolfram`LLMFunctions`Common`$LLMKitInfo);
+getLLMKitService[ KeyValuePattern[ "currentProvider" -> service_String ] ] := service;
+getLLMKitService[ None ] := getUpdatedLLMKitService[ ];
+getLLMKitService[ _ ] := None;
+getLLMKitService // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*getUpdatedLLMKitService*)
+getUpdatedLLMKitService // beginDefinition;
+
+getUpdatedLLMKitService[ ] := Enclose[
+    LLMSynthesize;
+    Wolfram`LLMFunctions`Common`UpdateLLMKitInfo[ ];
+    getUpdatedLLMKitService[ ] = ConfirmBy[
+        Wolfram`LLMFunctions`Common`$LLMKitInfo[ "currentProvider" ],
+        StringQ,
+        "LLMKitService"
+    ]
+];
+
+getUpdatedLLMKitService // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
 (* ::Section::Closed:: *)
@@ -70,8 +97,17 @@ $availableServiceNames := getAvailableServiceNames[ ];
 (* ::Subsection::Closed:: *)
 (*getAvailableServiceNames*)
 getAvailableServiceNames // beginDefinition;
-getAvailableServiceNames[ ] := getAvailableServiceNames @ $availableServices;
-getAvailableServiceNames[ services_Association ] := Keys @ services;
+getAvailableServiceNames // Options = { "IncludeHidden" -> True };
+
+getAvailableServiceNames[ opts: OptionsPattern[ ] ] :=
+    getAvailableServiceNames[ $availableServices, opts ];
+
+getAvailableServiceNames[ services_Association, opts: OptionsPattern[ ] ] :=
+    If[ TrueQ @ OptionValue[ "IncludeHidden" ],
+        Keys @ services,
+        Keys @ DeleteCases[ services, KeyValuePattern[ "Hidden" -> True ] ]
+    ];
+
 getAvailableServiceNames // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
@@ -124,6 +160,9 @@ getServiceModelList[ service_String, info_, models0_List ] := Enclose[
     throwInternalFailure
 ];
 
+getServiceModelList[ service_String, info_, Missing[ "NoModelList" ] ] :=
+    Missing[ "NoModelList" ];
+
 getServiceModelList // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
@@ -153,7 +192,6 @@ getModelListQuietly[ info_Association ] /; ! $allowConnectionDialog :=
         getModelListQuietly @ info
     ];
 
-(* cSpell: ignore nprmtv, genconerr, invs, nolink *)
 getModelListQuietly[ info_Association ] := Quiet[
     checkModelList[ info, Check[ info[ "ModelList" ], Missing[ "NotConnected" ], DialogInput::nprmtv ] ],
     { DialogInput::nprmtv, ServiceConnect::genconerr, ServiceConnect::invs, ServiceExecute::nolink }
@@ -167,7 +205,7 @@ getModelListQuietly // endDefinition;
 checkModelList // beginDefinition;
 
 checkModelList[ info_, models_List ] :=
-    models;
+    Select[ models, usableChatModelQ @ info ];
 
 checkModelList[ info_, $Canceled | $Failed | Missing[ "NotConnected" ] ] :=
     Missing[ "NotConnected" ];
@@ -186,6 +224,32 @@ checkModelList[ info_, other_ ] :=
     Missing[ "NoModelList" ];
 
 checkModelList // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*usableChatModelQ*)
+usableChatModelQ // beginDefinition;
+
+usableChatModelQ[ KeyValuePattern[ "Service" -> service_ ] ] :=
+    usableChatModelQ @ service;
+
+usableChatModelQ[ service_String ] :=
+    With[ { patt = $invalidModelNameParts @ service },
+        If[ MissingQ @ patt,
+            True &,
+            usableChatModelQ[ patt, # ] &
+        ]
+    ];
+
+usableChatModelQ[ patt_, model_ ] := Enclose[
+    Module[ { name },
+        name = ConfirmBy[ toModelName @ model, StringQ, "Name" ];
+        ConfirmMatch[ StringFreeQ[ name, patt, IgnoreCase -> True ], True|False, "Result" ]
+    ],
+    throwInternalFailure
+];
+
+usableChatModelQ // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsection::Closed:: *)
@@ -236,6 +300,19 @@ getAvailableServices0[ services0_Association? AssociationQ ] := Enclose[
     throwInternalFailure
 ];
 
+(* If stored service information is corrupt, attempt to reset it and try again: *)
+getAvailableServices0[ $$llmServicesFailure ] := Enclose[
+    Catch @ Module[ { services },
+        ConfirmMatch[ llm`ResetServices[ ], { __Success }, "Reset" ];
+        services = llm`LLMServiceInformation @ llm`ChatSubmit;
+        (* If it's still failing, return the failure: *)
+        If[ MatchQ[ services, $$llmServicesFailure ], Throw @ services ];
+        (* Otherwise we can proceed normally: *)
+        getAvailableServices0 @ ConfirmBy[ services, AssociationQ, "Services" ]
+    ],
+    throwInternalFailure
+];
+
 getAvailableServices0 // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
@@ -274,8 +351,8 @@ getOpenAIChatModels // endDefinition;
 (* ::**************************************************************************************************************:: *)
 (* ::Section::Closed:: *)
 (*Package Footer*)
-If[ Wolfram`ChatbookInternal`$BuildingMX,
-    Null;
+addToMXInitialization[
+    Null
 ];
 
 (* :!CodeAnalysis::EndBlock:: *)

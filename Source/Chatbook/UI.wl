@@ -22,41 +22,16 @@ GeneralUtilities`SetUsage[CreateToolbarContent, "
 CreateToolbarContent[] is called by the NotebookToolbar to generate the content of the 'Notebook AI Settings' attached menu.
 "]
 
-HoldComplete[
-    `getModelMenuIcon;
-    `getPersonaIcon;
-    `getPersonaMenuIcon;
-    `labeledCheckbox;
-    `makeAutomaticResultAnalysisCheckbox;
-    `makeTemperatureSlider;
-    `makeToolCallFrequencySlider;
-    `modelGroupName;
-    `personaDisplayName;
-    `resizeMenuIcon;
-    `serviceIcon;
-    `showSnapshotModelsQ;
-    `tr;
-];
-
 Begin["`Private`"]
 
-Needs[ "Wolfram`Chatbook`"                    ];
-Needs[ "Wolfram`Chatbook`Actions`"            ];
-Needs[ "Wolfram`Chatbook`CloudToolbar`"       ];
-Needs[ "Wolfram`Chatbook`Common`"             ];
-Needs[ "Wolfram`Chatbook`Dynamics`"           ];
-Needs[ "Wolfram`Chatbook`Errors`"             ];
-Needs[ "Wolfram`Chatbook`ErrorUtils`"         ];
-Needs[ "Wolfram`Chatbook`FrontEnd`"           ];
-Needs[ "Wolfram`Chatbook`Menus`"              ];
-Needs[ "Wolfram`Chatbook`Models`"             ];
-Needs[ "Wolfram`Chatbook`Personas`"           ];
-Needs[ "Wolfram`Chatbook`PreferencesContent`" ];
-Needs[ "Wolfram`Chatbook`PreferencesUtils`"   ];
-Needs[ "Wolfram`Chatbook`Serialization`"      ];
-Needs[ "Wolfram`Chatbook`Services`"           ];
-Needs[ "Wolfram`Chatbook`Settings`"           ];
-Needs[ "Wolfram`Chatbook`Utils`"              ];
+Needs[ "Wolfram`Chatbook`"                  ];
+Needs[ "Wolfram`Chatbook`Actions`"          ];
+Needs[ "Wolfram`Chatbook`Common`"           ];
+Needs[ "Wolfram`Chatbook`Errors`"           ];
+Needs[ "Wolfram`Chatbook`ErrorUtils`"       ];
+Needs[ "Wolfram`Chatbook`Menus`"            ];
+Needs[ "Wolfram`Chatbook`Personas`"         ];
+Needs[ "Wolfram`Chatbook`PreferencesUtils`" ];
 
 (* ::**************************************************************************************************************:: *)
 (* ::Section::Closed:: *)
@@ -135,20 +110,15 @@ SetFallthroughError[createChatNotEnabledToolbar]
 createChatNotEnabledToolbar[
 	nbObj_NotebookObject,
 	menuCell_CellObject
-] := Module[{
-	button
-},
-	button = EventHandler[
+] :=
+	EventHandler[
 		makeEnableAIChatFeaturesLabel[False],
 		"MouseClicked" :> (
 			tryMakeChatEnabledNotebook[nbObj, menuCell]
 		),
 		(* Needed so that we can open a ChoiceDialog if required. *)
 		Method -> "Queued"
-	];
-
-	Pane[button, {$chatMenuWidth, Automatic}]
-]
+	]
 
 (*====================================*)
 
@@ -168,17 +138,12 @@ tryMakeChatEnabledNotebook[
 		_ :> RaiseConfirmMatch[
 			ChoiceDialog[
 				Column[{
-					Item[Magnify["\[WarningSign]", 5], Alignment -> Center],
+					Item[Magnify["\[WarningSign]", 3], Alignment -> Center],
 					"",
-					RawBoxes @ Cell[
-						"Enabling Chat Notebook functionality will destroy the" <>
-						" private styles defined in this notebook, and replace" <>
-						" them with the shared Chatbook stylesheet.",
-						"Text"
-					],
+					tr[ "UITryEnableChatDialogMainText" ],
 					"",
-					RawBoxes @ Cell["Are you sure you wish to continue?", "Text"]
-				}],
+					tr[ "UITryEnableChatDialogConfirm" ]
+				}, BaseStyle -> {"DialogTextBasic", FontSize -> 15, LineIndent -> 0}, Spacings -> {0, 0}],
 				Background -> White
 			],
 			_?BooleanQ
@@ -202,8 +167,8 @@ tryMakeChatEnabledNotebook[
 
 SetFallthroughError[makeEnableAIChatFeaturesLabel]
 
-makeEnableAIChatFeaturesLabel[enabled_?BooleanQ] :=
-	labeledCheckbox[enabled, "Enable AI Chat Features", !enabled]
+makeEnableAIChatFeaturesLabel[ enabled_? BooleanQ ] :=
+	labeledCheckbox[ enabled, tr[ "UIEnableChatFeatures" ], ! enabled ];
 
 (*====================================*)
 
@@ -260,26 +225,33 @@ makeAutomaticResultAnalysisCheckbox[
 	}]
 },
 	labeledCheckbox[
-		Dynamic[
-			autoAssistQ[target],
-			setterFunction
-		],
-		Row[{
-			"Do automatic result analysis",
-			Spacer[3],
-			Tooltip[
-				chatbookIcon["InformationTooltip", False],
-				"If enabled, automatic AI provided suggestions will be added following evaluation results."
-			]
-		}]
+		Dynamic[ autoAssistQ @ target, setterFunction ],
+		(* We can only get the tooltip to glue itself to the text by first literalizing the text resource as a string before typesetting to RowBox. *)
+		Dynamic @ Row[
+			{
+				FrontEndResource[ "ChatbookStrings", "UIAutomaticAnalysisLabel" ],
+				Spacer[ 3 ],
+				Tooltip[ chatbookIcon[ "InformationTooltip", False ], FrontEndResource[ "ChatbookStrings", "UIAutomaticAnalysisTooltip" ] ]
+			},
+			"\[NoBreak]", StripOnInput -> True]
 	]
 ]
 
 (*====================================*)
 
+SetFallthroughError[menuItemLineWrap]
+
+menuItemLineWrap[label_, width_ : 50] :=
+Pane[
+	label,
+	$chatMenuWidth - width,
+	BaselinePosition -> Baseline, BaseStyle -> { LineBreakWithin -> Automatic, LineIndent -> -0.05, LinebreakAdjustments -> { 1, 10, 1, 0, 1 } } ]
+
+(*====================================*)
+
 SetFallthroughError[labeledCheckbox]
 
-labeledCheckbox[value_, label_, enabled_ : Automatic] := Style[
+labeledCheckbox[value_, label_, enabled_ : Automatic] :=
 	Row[
 		{
 			Checkbox[
@@ -288,7 +260,7 @@ labeledCheckbox[value_, label_, enabled_ : Automatic] := Style[
 				Enabled -> enabled
 			],
 			Spacer[3],
-			label
+			menuItemLineWrap @ label
 		},
 		BaseStyle -> {
 			"Text",
@@ -297,9 +269,7 @@ labeledCheckbox[value_, label_, enabled_ : Automatic] := Style[
 			         Preferences.nb *)
 			CheckboxBoxOptions -> { ImageMargins -> 0 }
 		}
-	],
-	LineBreakWithin -> False
-]
+	]
 
 (*====================================*)
 
@@ -315,13 +285,13 @@ makeToolCallFrequencySlider[ obj_ ] :=
                     ]
                 ]
             ],
-            Style[ "Choose automatically", "ChatMenuLabel" ]
+            Style[ menuItemLineWrap @ tr[ "UIAdvancedChooseAutomatically" ], "ChatMenuLabel" ]
         ];
         slider = Pane[
             Grid[
                 {
                     {
-                        Style[ "Rare", "ChatMenuLabel", FontSize -> 12 ],
+                        Style[ tr[ "Rare" ], "ChatMenuLabel", FontSize -> 12 ],
                         Slider[
                             Dynamic[
                                 Replace[ currentChatSettings[ obj, "ToolCallFrequency" ], Automatic -> 0.5 ],
@@ -331,7 +301,7 @@ makeToolCallFrequencySlider[ obj_ ] :=
                             ImageSize    -> { 100, Automatic },
                             ImageMargins -> { { 0, 0 }, { 5, 5 } }
                         ],
-                        Style[ "Often", "ChatMenuLabel", FontSize -> 12 ]
+                        Style[ tr[ "Often" ], "ChatMenuLabel", FontSize -> 12 ]
                     }
                 },
                 Spacings -> { { 0, { 0.5 }, 0 }, 0 },
@@ -380,12 +350,6 @@ showSnapshotModelsQ[] :=
 		"Chatbook",
 		"ShowSnapshotModels"
 	}]
-
-
-(*========================================================*)
-
-(* TODO: Make this look up translations for `name` in text resources data files. *)
-tr[name_?StringQ] := name
 
 (*
 
@@ -491,18 +455,18 @@ MakeChatInputCellDingbat[] :=
 (* ::Subsection::Closed:: *)
 (*MakeChatDelimiterCellDingbat*)
 MakeChatDelimiterCellDingbat[ ] :=
-	DynamicModule[ { $CellContext`cell },
-		trackedDynamic[ MakeChatDelimiterCellDingbat @ $CellContext`cell, { "ChatBlock" } ],
+	DynamicModule[ { Wolfram`ChatNB`cell },
+		trackedDynamic[ MakeChatDelimiterCellDingbat @ Wolfram`ChatNB`cell, { "ChatBlock" } ],
 		Initialization :> (
-			$CellContext`cell = EvaluationCell[ ];
+			Wolfram`ChatNB`cell = EvaluationCell[ ];
 			Needs[ "Wolfram`Chatbook`" -> None ];
-			updateDynamics[ "ChatBlock" ]
+			Symbol[ "Wolfram`Chatbook`ChatbookAction" ][ "UpdateDynamics", "ChatBlock" ]
 		),
 		Deinitialization :> (
 			Needs[ "Wolfram`Chatbook`" -> None ];
-			updateDynamics[ "ChatBlock" ]
+			Symbol[ "Wolfram`Chatbook`ChatbookAction" ][ "UpdateDynamics", "ChatBlock" ]
 		),
-		UnsavedVariables :> { $CellContext`cell }
+		UnsavedVariables :> { Wolfram`ChatNB`cell }
 	];
 
 MakeChatDelimiterCellDingbat[cell_CellObject] := Module[{
@@ -588,7 +552,7 @@ makeChatActionMenu[
 		]
 	}]
 }, Module[{
-	personas = GetPersonasAssociation[],
+	personas = GetPersonasAssociation[ "IncludeHidden" -> False ],
 	actionCallback
 },
 	(*--------------------------------*)
@@ -598,29 +562,23 @@ makeChatActionMenu[
 	RaiseConfirmMatch[personas, <| (_String -> _Association)... |>];
 
 	(* initialize PrivateFrontEndOptions if they aren't already present or somehow broke *)
-	If[!MatchQ[CurrentValue[$FrontEnd, {PrivateFrontEndOptions, "InterfaceSettings", "Chatbook", "VisiblePersonas"}], {___String}],
-        CurrentValue[
-			$FrontEnd,
-			{PrivateFrontEndOptions, "InterfaceSettings", "Chatbook", "VisiblePersonas"}
-		] = DeleteCases[Keys[personas], Alternatives["Birdnardo", "RawModel", "Wolfie"]]
+	If[!MatchQ[CurrentChatSettings[$FrontEnd, "VisiblePersonas"], {___String}],
+        CurrentChatSettings[$FrontEnd, "VisiblePersonas"] = DeleteCases[
+			Keys[personas],
+			Alternatives["Birdnardo", "RawModel", "Wolfie"]
+		]
 	];
-	If[!MatchQ[CurrentValue[$FrontEnd, {PrivateFrontEndOptions, "InterfaceSettings", "Chatbook", "PersonaFavorites"}], {___String}],
-        CurrentValue[
-			$FrontEnd,
-			{PrivateFrontEndOptions, "InterfaceSettings", "Chatbook", "PersonaFavorites"}
-		] = {"CodeAssistant", "CodeWriter", "PlainChat"}
+	If[!MatchQ[CurrentChatSettings[$FrontEnd, "PersonaFavorites"], {___String}],
+        CurrentChatSettings[$FrontEnd, "PersonaFavorites"] = {"CodeAssistant", "CodeWriter", "PlainChat"}
 	];
 
 	(* only show visible personas and sort visible personas based on favorites setting *)
 	personas = KeyTake[
 		personas,
-		CurrentValue[$FrontEnd, {PrivateFrontEndOptions, "InterfaceSettings", "Chatbook", "VisiblePersonas"}]
+		CurrentChatSettings[$FrontEnd, "VisiblePersonas"]
 	];
 	personas = With[{
-		favorites = CurrentValue[
-			$FrontEnd,
-			{PrivateFrontEndOptions, "InterfaceSettings", "Chatbook", "PersonaFavorites"}
-		]
+		favorites = CurrentChatSettings[$FrontEnd, "PersonaFavorites"]
 	},
 		Association[
 			(* favorites appear in the exact order provided in the CurrentValue *)
@@ -759,7 +717,7 @@ makeChatActionMenuContent[
 
 	advancedSettingsMenu = Join[
 		{
-			"Temperature",
+			tr[ "UIAdvancedTemperature" ],
 			{
 				None,
 				makeTemperatureSlider[tempValue],
@@ -767,14 +725,14 @@ makeChatActionMenuContent[
 			}
 		},
         {
-			"Tool Call Frequency",
+			menuItemLineWrap @ tr[ "UIAdvancedToolCallFrequency" ],
 			{
 				None,
 				makeToolCallFrequencySlider[toolValue],
 				None
 			}
 		},
-		{"Roles"},
+		{ tr[ "UIAdvancedRoles" ] },
 		Map[
 			entry |-> ConfirmReplace[entry, {
 				{role_?StringQ, icon_} :> {
@@ -801,14 +759,14 @@ makeChatActionMenuContent[
 	(*------------------------------------*)
 
 	menuItems = Join[
-		{"Personas"},
+		{ tr[ "UIPersonas" ] },
 		KeyValueMap[
 			{persona, personaSettings} |-> With[{
 				icon = getPersonaMenuIcon[personaSettings]
 			},
 				{
 					alignedMenuIcon[persona, personaValue, icon],
-					personaDisplayName[persona, personaSettings],
+					menuItemLineWrap @ personaDisplayName[persona, personaSettings],
 					Hold[callback["Persona", persona];updateDynamics[{"ChatBlock"}]]
 				}
 			],
@@ -821,23 +779,23 @@ makeChatActionMenuContent[
 					Delimiter,
 					{
 						alignedMenuIcon[getIcon["ChatBlockSettingsMenuIcon"]],
-						"Chat Block Settings\[Ellipsis]",
+						tr[ "UIChatBlockSettings" ],
 						"OpenChatBlockSettings"
 					}
 				}]
 			}],
 			Delimiter,
-			{alignedMenuIcon[getIcon["PersonaOther"]], "Add & Manage Personas\[Ellipsis]", "PersonaManage"},
-			{alignedMenuIcon[getIcon["ToolManagerRepository"]], "Add & Manage Tools\[Ellipsis]", "ToolManage"},
+			{alignedMenuIcon[getIcon["PersonaOther"]], menuItemLineWrap @ tr[ "UIAddAndManagePersonas" ], "PersonaManage"},
+			{alignedMenuIcon[getIcon["ToolManagerRepository"]], menuItemLineWrap @ tr[ "UIAddAndManageTools" ], "ToolManage"},
 			Delimiter,
             <|
-                "Label" -> "Models",
+                "Label" -> tr[ "UIModels" ],
                 "Type"  -> "Submenu",
                 "Icon"  -> alignedMenuIcon @ getIcon[ "ChatBlockSettingsMenuIcon" ],
                 "Data"  :> createServiceMenu[ targetObj, ParentCell @ EvaluationCell[ ] ]
             |>,
             <|
-                "Label" -> "Advanced Settings",
+                "Label" -> tr[ "UIAdvancedSettings" ],
                 "Type"  -> "Submenu",
                 "Icon"  -> alignedMenuIcon @ getIcon[ "AdvancedSettings" ],
                 "Data"  -> advancedSettingsMenu
@@ -898,8 +856,18 @@ createServiceMenu[ obj_, root_ ] :=
     With[ { model = currentChatSettings[ obj, "Model" ] },
         MakeMenu[
             Join[
-                { "Services" },
-                (createServiceItem[ obj, model, root, #1 ] &) /@ getAvailableServiceNames[ ]
+                { tr[ "UIModelsServices" ] },
+                {
+                    {
+                        serviceIcon[ model, "Wolfram" ],
+                        "Wolfram",
+                        Hold[ removeChatMenus @ EvaluationCell[ ]; setModel[ obj, <| "Service" -> "LLMKit", "Name" -> Automatic |> ] ]
+                    },
+                    Delimiter
+                },
+                Map[
+                    createServiceItem[ obj, model, root, #1 ] &,
+                    DeleteCases[ getAvailableServiceNames[ "IncludeHidden" -> False ], "Wolfram" ] ]
             ],
             GrayLevel[ 0.85 ],
             140
@@ -927,29 +895,61 @@ createServiceItem // endDefinition;
 (*serviceIcon*)
 serviceIcon // beginDefinition;
 
-serviceIcon[ KeyValuePattern[ "Service" -> service_String ], service_String ] :=
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsubsection::Closed:: *)
+(*Definitions for the model submenu*)
+
+(* OpenAI is the only service that can have raw strings as a model spec: *)
+serviceIcon[ model_String, "OpenAI" ] :=
+    alignedMenuIcon[ $currentSelectionCheck, serviceIcon[ "OpenAI" ] ];
+
+(* LLMKit service is provided by Wolfram *)
+serviceIcon[ model: KeyValuePattern[ "Service" -> "LLMKit" ], "Wolfram" ] :=
+    alignedMenuIcon[ $currentSelectionCheck, serviceIcon @ "Wolfram" ];
+
+(* Show a checkmark if the currently selected model belongs to this service: *)
+serviceIcon[ model: KeyValuePattern[ "Service" -> service_String ], service_String ] :=
     alignedMenuIcon[ $currentSelectionCheck, serviceIcon @ service ];
 
-serviceIcon[ _String, "OpenAI" ] :=
-    alignedMenuIcon[ $currentSelectionCheck, serviceIcon @ "OpenAI" ];
-
-serviceIcon[ _, service_String ] :=
+(* Otherwise hide the checkmark: *)
+serviceIcon[ model_, service_String ] :=
     alignedMenuIcon[ Style[ $currentSelectionCheck, ShowContents -> False ], serviceIcon @ service ];
 
-serviceIcon[ KeyValuePattern @ { "Service" -> _String, "Icon" -> icon: Except[ "" ] } ] :=
+$currentSelectionCheck = Style[ "\[Checkmark]", FontColor -> GrayLevel[ 0.25 ] ];
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsubsection::Closed:: *)
+(*Services specified as associations*)
+(* These services have template box definitions for icons built into the chatbook stylesheet: *)
+serviceIcon[ KeyValuePattern[ "Service" -> service: "OpenAI"|"Anthropic"|"PaLM" ] ] :=
+	serviceIcon @ service;
+
+(* Evaluate delayed icon specs: *)
+serviceIcon[ as: KeyValuePattern[ "Icon" :> icon_ ] ] :=
+    serviceIcon @ <| as, "Icon" -> icon |>;
+
+(* Use the icon specified in the service specification: *)
+serviceIcon[ KeyValuePattern @ { "Service" -> _String, "Icon" -> icon: Except[ ""|$$unspecified ] } ] :=
     icon;
 
+(* Fallback to name-based icon: *)
 serviceIcon[ KeyValuePattern[ "Service" -> service_String ] ] :=
     serviceIcon @ service;
 
-serviceIcon[ "OpenAI"       ] := chatbookIcon[ "ServiceIconOpenAI"   , True ];
-serviceIcon[ "Anthropic"    ] := chatbookIcon[ "ServiceIconAnthropic", True ];
-serviceIcon[ "PaLM"         ] := chatbookIcon[ "ServiceIconPaLM"     , True ];
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsubsection::Closed:: *)
+(*Services specified as strings*)
+
+(* Services with icons defined in template boxes: *)
+serviceIcon[ "Wolfram"   ] := chatbookIcon[ "llmkit-dialog-sm"    , True ];
+serviceIcon[ "OpenAI"    ] := chatbookIcon[ "ServiceIconOpenAI"   , True ];
+serviceIcon[ "Anthropic" ] := chatbookIcon[ "ServiceIconAnthropic", True ];
+serviceIcon[ "PaLM"      ] := chatbookIcon[ "ServiceIconPaLM"     , True ];
+
+(* Otherwise look in registered service info for an icon: *)
 serviceIcon[ service_String ] := Replace[ $availableServices[ service, "Icon" ], $$unspecified -> "" ];
 
 serviceIcon // endDefinition;
-
-$currentSelectionCheck = Style[ "\[Checkmark]", FontColor -> GrayLevel[ 0.25 ] ];
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsubsection::Closed:: *)
@@ -971,7 +971,7 @@ dynamicModelMenu[ obj_, root_, model_, service_ ] :=
                     None,
                     Pane[
                         Column @ {
-                            Style[ "Getting available models\[Ellipsis]", "ChatMenuLabel" ],
+                            Style[ tr[ "UIModelsGet" ], "ChatMenuLabel" ],
                             ProgressIndicator[ Appearance -> "Percolate" ]
                         },
                         ImageMargins -> 5
@@ -1021,7 +1021,7 @@ makeServiceModelMenu[ Dynamic[ display_ ], obj_, root_, currentModel_, service_S
             { service },
             {
                 Spacer[ 0 ],
-                "Connect for model list",
+                tr[ "UIModelsNoList" ],
                 Hold[
                     display = simpleModelMenuDisplay[ service, ProgressIndicator[ Appearance -> "Percolate" ] ];
                     makeServiceModelMenu[
@@ -1084,8 +1084,9 @@ menuModelGroup // endDefinition;
 (* ::Subsubsection::Closed:: *)
 (*modelGroupName*)
 modelGroupName // beginDefinition;
-modelGroupName[ KeyValuePattern[ "FineTuned" -> True ] ] := "Fine Tuned Models";
-modelGroupName[ KeyValuePattern[ "Snapshot"  -> True ] ] := "Snapshot Models";
+modelGroupName[ KeyValuePattern[ "FineTuned" -> True ] ] := trRaw[ "UIModelsFineTuned" ];
+modelGroupName[ KeyValuePattern[ "Preview"   -> True ] ] := trRaw[ "UIModelsPreview"   ];
+modelGroupName[ KeyValuePattern[ "Snapshot"  -> True ] ] := trRaw[ "UIModelsSnapshot"  ];
 modelGroupName[ _ ] := None;
 modelGroupName // endDefinition;
 
@@ -1113,6 +1114,7 @@ modelMenuItem // endDefinition;
 (* ::Subsubsection::Closed:: *)
 (*modelSelectionCheckmark*)
 modelSelectionCheckmark // beginDefinition;
+modelSelectionCheckmark[ KeyValuePattern[ "Name" -> model: Automatic ], model: Automatic ] := $currentSelectionCheck; (* LLMKit *)
 modelSelectionCheckmark[ KeyValuePattern[ "Name" -> model_String ], model_String ] := $currentSelectionCheck;
 modelSelectionCheckmark[ model_String, model_String ] := $currentSelectionCheck;
 modelSelectionCheckmark[ _, _ ] := Style[ $currentSelectionCheck, ShowContents -> False ];
@@ -1123,7 +1125,7 @@ modelSelectionCheckmark // endDefinition;
 (*setModel*)
 setModel // beginDefinition;
 
-setModel[ obj_, KeyValuePattern @ { "Service" -> service_String, "Name" -> model_String } ] := (
+setModel[ obj_, KeyValuePattern @ { "Service" -> service_String, "Name" -> model: _String|Automatic } ] := (
     CurrentValue[ obj, { TaggingRules, "ChatNotebookSettings", "Model" } ] =
         <| "Service" -> service, "Name" -> model |>
 );
@@ -1136,11 +1138,11 @@ setModel // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsubsection::Closed:: *)
-(*absoluteCurrentValue*)
-SetFallthroughError[absoluteCurrentValue]
+(*absoluteCurrentValueOrigin*)
+SetFallthroughError[absoluteCurrentValueOrigin]
 
-absoluteCurrentValue[cell_, {TaggingRules, "ChatNotebookSettings", key_}] := currentChatSettings[cell, key]
-absoluteCurrentValue[cell_, keyPath_] := AbsoluteCurrentValue[cell, keyPath]
+absoluteCurrentValueOrigin[cell_, {TaggingRules, "ChatNotebookSettings", key_}] := currentChatSettings[cell, key]
+absoluteCurrentValueOrigin[cell_, keyPath_] := AbsoluteCurrentValue[cell, keyPath]
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsubsection::Closed:: *)
@@ -1163,7 +1165,7 @@ currentValueOrigin[
 	value,
 	inlineValue
 },
-	value = absoluteCurrentValue[targetObj, keyPath];
+	value = absoluteCurrentValueOrigin[targetObj, keyPath];
 
 	(* This was causing dynamics to update on every keystroke, so it's disabled for now: *)
 	(* inlineValue = nestedLookup[
@@ -1271,12 +1273,24 @@ styleListItem[
 (* ::**************************************************************************************************************:: *)
 (* ::Subsubsection::Closed:: *)
 (*personaDisplayName*)
-SetFallthroughError[personaDisplayName]
+personaDisplayName // beginDefinition;
 
-personaDisplayName[name_String] := personaDisplayName[name, GetCachedPersonaData[name]]
-personaDisplayName[name_String, data_Association] := personaDisplayName[name, data["DisplayName"]]
-personaDisplayName[name_String, displayName_String] := displayName
-personaDisplayName[name_String, _] := name
+personaDisplayName[ name_String ] :=
+	personaDisplayName[ name, GetCachedPersonaData @ name ];
+
+personaDisplayName[ name_String, data_Association ] :=
+	personaDisplayName[ name, data[ "DisplayName" ] ];
+
+personaDisplayName[ name_String, Dynamic @ FEPrivate`FrontEndResource[ "ChatbookStrings", id_ ] ] /; $CloudEvaluation :=
+    tr @ id;
+
+personaDisplayName[ name_String, displayName: Except[ $$unspecified ] ] :=
+	displayName;
+
+personaDisplayName[ name_String, _ ] :=
+	name;
+
+personaDisplayName // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsubsection::Closed:: *)
@@ -1364,8 +1378,8 @@ nestedLookup[as_, keys_] := nestedLookup[as, keys, Missing["KeySequenceAbsent", 
 (* ::**************************************************************************************************************:: *)
 (* ::Section::Closed:: *)
 (*Package Footer*)
-If[ Wolfram`ChatbookInternal`$BuildingMX,
-    Null;
+addToMXInitialization[
+    Null
 ];
 
 (* :!CodeAnalysis::EndBlock:: *)

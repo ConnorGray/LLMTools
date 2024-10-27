@@ -1,11 +1,11 @@
 PacletObject[ <|
     "Name"           -> "Wolfram/Chatbook",
     "PublisherID"    -> "Wolfram",
-    "Version"        -> "1.4.5",
-    "WolframVersion" -> "13.3+",
+    "Version"        -> "1.5.2",
+    "WolframVersion" -> "14.1+",
     "Description"    -> "Wolfram Notebooks + LLMs",
     "License"        -> "MIT",
-    "Creator"        -> "Connor Gray, Theodore Gray, Richard Hennigan",
+    "Creator"        -> "Connor Gray, Theodore Gray, Richard Hennigan, Kevin Daily",
     "Icon"           -> "Assets/Images/PacletIcon.png",
     "ReleaseID"      -> "$RELEASE_ID$",
     "ReleaseDate"    -> "$RELEASE_DATE$",
@@ -34,10 +34,11 @@ PacletObject[ <|
         { "Asset",
             "Root"    -> "Assets",
             "Assets"  -> {
-                { "Icons"           , "Icons.wxf"            },
-                { "DisplayFunctions", "DisplayFunctions.wxf" },
                 { "AIAssistant"     , "AIAssistant"          },
-                { "SandboxMessages" , "SandboxMessages.wl"   }
+                { "DisplayFunctions", "DisplayFunctions.wxf" },
+                { "Icons"           , "Icons.wxf"            },
+                { "SandboxMessages" , "SandboxMessages.wl"   },
+                { "Tokenizers"      , "Tokenizers"           }
             }
         },
         { "LLMConfiguration",
@@ -45,6 +46,7 @@ PacletObject[ <|
                 "PlainChat",
                 "CodeAssistant",
                 "CodeWriter",
+                "NotebookAssistant",
                 "RawModel",
                 "Wolfie",
                 "Birdnardo"

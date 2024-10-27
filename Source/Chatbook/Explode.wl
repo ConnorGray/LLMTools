@@ -1,19 +1,69 @@
 (* ::Section::Closed:: *)
 (*Package Header*)
 BeginPackage[ "Wolfram`Chatbook`Explode`" ];
-
-`explodeCell;
-
 Begin[ "`Private`" ];
 
 Needs[ "Wolfram`Chatbook`"        ];
 Needs[ "Wolfram`Chatbook`Common`" ];
 
-$$newCellStyle = "Section"|"Subsection"|"Subsubsection"|"Subsubsubsection"|"Item"|"Input"|"ExternalLanguage"|"Program";
+$$newCellStyle = Alternatives[
+    "Abstract",
+    "Affiliation",
+    "Author",
+    "BlockQuote",
+    "Chapter",
+    "Code",
+    "CodeText",
+    "DisplayFormula",
+    "DisplayFormulaNumbered",
+    "Echo",
+    "EchoAfter",
+    "EchoBefore",
+    "EchoTiming",
+    "ExternalLanguage",
+    "Input",
+    "InputOnly",
+    "Item",
+    "ItemNumbered",
+    "ItemParagraph",
+    "MarkdownDelimiter",
+    "Message",
+    "Output",
+    "Picture",
+    "Print",
+    "Program",
+    "Reference",
+    "Section",
+    "SideCaption",
+    "SideCaptionArray",
+    "SmallText",
+    "Subchapter",
+    "Subitem",
+    "SubitemNumbered",
+    "SubitemParagraph",
+    "Subsection",
+    "Subsubitem",
+    "SubsubitemNumbered",
+    "SubsubitemParagraph",
+    "Subsubsection",
+    "Subsubsubsection",
+    "Subsubsubsubsection",
+    "Subsubtitle",
+    "Subtitle",
+    "Text",
+    "TextTableForm",
+    "Title"
+];
+
+$$ws = _String? (StringMatchQ[ WhitespaceCharacter... ]);
 
 (* ::**************************************************************************************************************:: *)
 (* ::Section::Closed:: *)
-(*Explode Cell*)
+(*ExplodeCell*)
+ExplodeCell // beginDefinition;
+ExplodeCell[ cell_Cell ] := catchMine @ LogChatTiming @ explodeCell @ cell;
+ExplodeCell[ RawBoxes[ cell_Cell ] ] := catchMine @ ExplodeCell @ cell;
+ExplodeCell // endExportedDefinition;
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsection::Closed:: *)
@@ -26,27 +76,116 @@ explodeCell[ string_String ] := Cell[ #, "Text" ] & /@ StringSplit[ string, Long
 explodeCell[ (BoxData|TextData)[ textData_, ___ ] ] := explodeCell @ Flatten @ List @ textData;
 
 explodeCell[ textData_List ] := Enclose[
-    Module[ { processed },
-        processed = ConfirmMatch[ ReplaceRepeated[ textData, $preprocessingRules ], $$textDataList, "Preprocessing" ];
-        ConfirmMatch[ regroupCells @ processed, $$textDataList, "RegroupCells" ]
+    Module[ { processed, grouped, post },
+        processed = ConfirmMatch[ preprocessExplodedCells @ textData, $$textDataList, "Preprocessing" ];
+        grouped = ConfirmMatch[ regroupCells @ processed, $$textDataList, "RegroupCells" ];
+        post = ConfirmMatch[ Flatten[ postProcessExplodedCells /@ grouped ], { __Cell }, "PostProcessing" ];
+        SequenceReplace[
+            post,
+            { Cell[ caption_? captionQ, "Text", a___ ], input: Cell[ __, "Input"|"Code", ___ ] } :>
+                Sequence[ Cell[ caption, "CodeText", a ], input ]
+        ]
     ],
-    throwInternalFailure[ explodeCell @ textData, ## ] &
+    throwInternalFailure
 ];
 
 explodeCell // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*captionQ*)
+captionQ // beginDefinition;
+captionQ[ text_String ] := StringEndsQ[ text, ":"~~WhitespaceCharacter... ];
+captionQ[ (ButtonBox|Cell|StyleBox|TextData)[ text_, ___ ] ] := captionQ @ text;
+captionQ[ { ___, text_ } ] := captionQ @ text;
+captionQ[ _ ] := False;
+captionQ // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*preprocessExplodedCells*)
+preprocessExplodedCells // beginDefinition;
+preprocessExplodedCells[ text_List ] := preprocessExplodedCells0 @ ReplaceRepeated[ text, $preprocessingRules ];
+preprocessExplodedCells // endDefinition;
+
+preprocessExplodedCells0 // beginDefinition;
+preprocessExplodedCells0[ TextData[ text_ ] ] := preprocessExplodedCells0 @ Flatten @ { text };
+preprocessExplodedCells0[ { text_TextData } ] := preprocessExplodedCells0 @ text;
+preprocessExplodedCells0[ text_List ] := Flatten @ text;
+preprocessExplodedCells0 // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*postProcessExplodedCells*)
+postProcessExplodedCells // beginDefinition;
+
+postProcessExplodedCells[
+    Cell[ BoxData @ RowBox @ { RowBox @ { "In", "[", n__String, "]" }, "="|":=", boxes__ }, "Input", a___ ]
+] := Cell[ BoxData @ RowBox @ { boxes }, "Input", CellLabel -> "In["<>n<>"]:=", a ];
+
+postProcessExplodedCells[
+    Cell[ BoxData @ RowBox @ { RowBox @ { "Out", "[", n__String, "]" }, "="|":=", boxes__ }, "Input", a___ ]
+] := Cell[ BoxData @ RowBox @ { boxes }, "Output", CellLabel -> "Out["<>n<>"]=", a ];
+
+postProcessExplodedCells[ Cell[
+    BoxData @ RowBox @ {
+        RowBox @ { RowBox @ { "In", "[", nIn__String, "]" }, ":=", in___ },
+        $$ws...,
+        RowBox @ { RowBox @ { "Out", "[", nOut__String, "]" }, "=", out___ }
+    },
+    "Input"
+] ] := postProcessExplodedCells /@ {
+    Cell[ BoxData @ RowBox @ { in }, "Input", CellLabel -> "In["<>nIn<>"]:=" ],
+    Cell[ BoxData @ RowBox @ { out }, "Output", CellLabel -> "Out["<>nOut<>"]=" ]
+};
+
+postProcessExplodedCells[ cell: Cell[ __, "Input", ___ ] ] := DeleteCases[
+    cell /. { RowBox @ { RowBox @ { "In", "[", __, "]" }, "="|":=", boxes__ } :> RowBox @ { boxes } },
+    RowBox @ { RowBox @ { "Out", "[", __, "]" }, "="|":=", __ },
+    Infinity
+];
+
+postProcessExplodedCells[ Cell[ BoxData @ TooltipBox[ TemplateBox[ { }, "ImageNotFound" ], ___ ], "Picture", ___ ] ] :=
+    Nothing;
+
+postProcessExplodedCells[ Cell[ BoxData @ TemplateBox[ { }, "ImageNotFound" ], "Picture", ___ ] ] :=
+    Nothing;
+
+postProcessExplodedCells[ cell_Cell ] :=
+    cell;
+
+postProcessExplodedCells // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
 (* ::Subsection::Closed:: *)
 (*$preprocessingRules*)
 $preprocessingRules := $preprocessingRules = Dispatch @ {
-    (* Convert TextRefLink to plain hyperlink: *)
-    Cell @ BoxData[ TemplateBox[ { label_, uri_ }, "TextRefLink" ], ___ ] :>
-        Cell @ BoxData @ ButtonBox[
-            StyleBox[ label, "Text" ],
-            BaseStyle  -> "Link",
-            ButtonData -> uri,
-            ButtonNote -> uri
+    (* Workspace/Inline chat template boxes: *)
+    Cell[ BoxData @ TemplateBox[ { Cell[ text_, ___ ] }, "AssistantMessageBox", ___ ], ___ ] :>
+        text,
+
+    (* Remove "InlineSection" styling: *)
+    Cell[
+        BoxData @ PaneBox[
+            StyleBox[ Cell[ text_, Background -> None ], style_, ___ ], ___ ],
+            "InlineSection",
+            ___
+    ] :> Cell[ text, style ],
+
+    Cell[ BoxData @ PaneBox[ StyleBox[ text_, style_, ___ ], ___ ], "InlineSection", ___ ] :>
+        RuleCondition @ StyleBox[ extractText @ text, style ],
+
+    (* Inline code cell groups: *)
+    Cell[ BoxData @ GridBox[ grid_List, ___ ], "CellGroupBlock", ___ ] :>
+        Sequence @@ Replace[
+            Cases[ grid, { _, a_ } :> a ],
+            box: TemplateBox[ _, "MessageTemplate", ___ ] :> Cell[ BoxData @ box, "Message" ],
+            { 1 }
         ],
+
+    (* Convert TextRefLink to plain hyperlink: *)
+    Cell @ BoxData[ TemplateBox[ { label_, uri_, ___ }, "TextRefLink" ], ___ ] :>
+        ButtonBox[ label, BaseStyle -> "Link", ButtonData -> uri ],
 
     (* Convert interactive code blocks to input cells: *)
     DynamicModuleBox[
@@ -61,7 +200,7 @@ $preprocessingRules := $preprocessingRules = Dispatch @ {
     ] :> cell,
 
     (* Convert "ChatCodeInlineTemplate" to "InlineCode" cells: *)
-    Cell[ BoxData[ TemplateBox[ { boxes_ }, "ChatCodeInlineTemplate" ], ___ ], "ChatCode"|"ChatCodeActive", ___ ] :>
+    Cell[ BoxData[ TemplateBox[ { boxes_ }, "ChatCodeInlineTemplate", ___ ], ___ ], "ChatCode"|"ChatCodeActive", ___ ] :>
         Cell[ BoxData @ boxes, "InlineCode" ],
 
     (* Remove "ChatCode" styling: *)
@@ -74,10 +213,20 @@ $preprocessingRules := $preprocessingRules = Dispatch @ {
     Cell[ text_, "ChatPreformatted", ___ ] :> Cell[ text, "Program" ],
 
     (* Remove "ChatCodeBlockTemplate" template boxes: *)
-    TemplateBox[ { cell_Cell }, "ChatCodeBlockTemplate" ] :> cell,
+    TemplateBox[ { cell_Cell }, "ChatCodeBlockTemplate", ___ ] :> cell,
 
     (* Remove nested cells: *)
     Cell @ BoxData[ cell_Cell, ___ ] :> cell,
+
+    Cell[ TextData @ { StyleBox[ "\[Bullet]", ___ ], " ", content___ }, "InlineItem", ___ ] :>
+        Cell[ TextData @ content, "Item" ],
+
+    Cell[ TextData @ { _String, StyleBox[ "\[Bullet]", ___ ], " ", content___ }, "InlineSubitem", ___ ] :>
+        Cell[ TextData @ content, "Subitem" ],
+
+    (* Format text tables: *)
+    Cell[ content__, "TextTableForm", opts: OptionsPattern[ ] ] :>
+        Cell[ content, "TextTableForm", "Text", opts ],
 
     (* Remove extra style overrides from external language cells: *)
     Cell[ content_, "ExternalLanguage", OrderlessPatternSequence[ System`CellEvaluationLanguage -> lang_, __ ] ] :>
@@ -98,8 +247,33 @@ $preprocessingRules := $preprocessingRules = Dispatch @ {
         { a, Cell @@ b, c },
 
     (* Tiny line breaks: *)
-    StyleBox[ "\n", "TinyLineBreak", ___ ] :> "\n"
+    StyleBox[ "\n", "TinyLineBreak", ___ ] :> "\n",
+
+    Cell[ boxes_, style: "MarkdownDelimiter"|"BlockQuote", a___ ] :>
+        Cell[ boxes, "Text", style, a ],
+
+    (* Fix cases where the LLM tried to manually create MarkdownImageBoxes: *)
+    RowBox @ { "\\!", RowBox @ { "\\(", RowBox @ { "*MarkdownImageBox", "[", uri_, "]" }, "\\)" } } :>
+        With[ { expr = Quiet @ catchAlways @ GetExpressionURI @ StringTrim[ uri, "\"" ] },
+            If[ FailureQ @ expr,
+                "\[LeftSkeleton]Removed\[RightSkeleton]",
+                ToBoxes @ expr
+            ]
+        ],
+
+    (* Markdown images: *)
+    Cell[ BoxData @ PaneBox[ TagBox[ box_, "MarkdownImage", ___ ], ___ ], "Input", ___ ] :>
+        Cell[ BoxData @ box, "Picture" ]
 };
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*extractText*)
+extractText // beginDefinition;
+extractText[ text_String ] := If[ StringMatchQ[ text, "\"" ~~ ___ ~~ "\"" ], ToExpression @ text, text ];
+extractText[ (Cell|StyleBox)[ text_, ___ ] ] := extractText @ text;
+extractText[ text_ ] := extractText[ text ] = CellToString @ text;
+extractText // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsection::Closed:: *)
@@ -147,6 +321,9 @@ regroupCells[ { grouped___ }, { grouping___ }, { string_String, rest___ } ] :=
         }
     ];
 
+regroupCells[ { grouped___ }, { grouping___ }, { other_, rest___ } ] :=
+    regroupCells[ { grouped }, { grouping, other }, { rest } ];
+
 regroupCells[ { grouped___ }, { grouping___ }, { } ] :=
     DeleteCases[ { grouped, Cell[ TextData @ { grouping }, "Text" ] }, Cell[ TextData @ { }, ___ ] ];
 
@@ -155,7 +332,7 @@ regroupCells // endDefinition;
 (* ::**************************************************************************************************************:: *)
 (* ::Section::Closed:: *)
 (*Package Footer*)
-If[ Wolfram`ChatbookInternal`$BuildingMX,
+addToMXInitialization[
     $preprocessingRules;
 ];
 

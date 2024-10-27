@@ -3,6 +3,16 @@
 Begin[ "Wolfram`ChatbookStylesheetBuilder`Private`" ];
 
 
+(* ::Section::Closed:: *)
+(*Resources*)
+
+
+(* ::Subsection::Closed:: *)
+(*tr*)
+
+
+tr[name_?StringQ] := Dynamic[FEPrivate`FrontEndResource["ChatbookStrings", name]]
+
 
 (* ::Section::Closed:: *)
 (*Notebook*)
@@ -23,9 +33,9 @@ Cell[
     |>,
 
     ComponentwiseContextMenu -> <|
-        "CellBracket" -> contextMenu[ $askMenuItem, $excludeMenuItem, Delimiter, "CellBracket" ],
-        "CellGroup"   -> contextMenu[ $excludeMenuItem, Delimiter, "CellGroup" ],
-        "CellRange"   -> contextMenu[ $excludeMenuItem, Delimiter, "CellRange" ]
+        "CellBracket" -> contextMenu[ { $askMenuItem, $excludeMenuItem, Delimiter }, "CellBracket" ],
+        "CellGroup"   -> contextMenu[ { $excludeMenuItem, Delimiter }, "CellGroup" ],
+        "CellRange"   -> contextMenu[ { $excludeMenuItem, Delimiter }, "CellRange" ]
     |>,
 
     PrivateCellOptions -> {
@@ -52,7 +62,7 @@ Cell[
 
 Cell[
     StyleData[ "Text" ],
-    ContextMenu -> contextMenu[ $askMenuItem, Delimiter, "Text" ]
+    ContextMenu -> contextMenu[ { $askMenuItem, Delimiter }, "Text" ]
 ]
 
 
@@ -70,7 +80,7 @@ Cell[
         "*" -> "Item",
         ">" -> "ExternalLanguageDefault"
     },
-    ContextMenu -> contextMenu[ $askMenuItem, Delimiter, "Input" ],
+    ContextMenu -> contextMenu[ { $askMenuItem, Delimiter }, "Input" ],
     CellEpilog :> With[ { $CellContext`cell = (FinishDynamic[ ]; EvaluationCell[ ]) },
         Quiet @ Needs[ "Wolfram`Chatbook`" -> None ];
         Symbol[ "Wolfram`Chatbook`ChatbookAction" ][ "AIAutoAssist", $CellContext`cell ]
@@ -85,7 +95,7 @@ Cell[
 
 Cell[
     StyleData[ "Output" ],
-    ContextMenu -> contextMenu[ $askMenuItem, Delimiter, "Output" ],
+    ContextMenu -> contextMenu[ { $askMenuItem, Delimiter }, "Output" ],
     CellTrayWidgets -> <| "GearMenu" -> <| "Condition" -> False |> |>
 ]
 
@@ -129,15 +139,26 @@ Cell[
 
 Cell[
     StyleData[ "ChatInput", StyleDefinitions -> StyleData[ "FramedChatCell" ] ],
-    CellFrameColor    -> RGBColor[ "#a3c9f2" ],
-    CellGroupingRules -> "InputGrouping",
-    CellMargins       -> { { 66, 25 }, { 1, 8 } },
-    CellTrayWidgets   -> <| "ChatWidget" -> <| "Visible" -> False |> |>,
-    CounterIncrements -> { "ChatInputCount" },
-    Evaluatable       -> True,
-    MenuSortingValue  -> 1543,
-    StyleKeyMapping   -> { "~" -> "ChatDelimiter", "'" -> "SideChat" },
-    TaggingRules      -> <| "ChatNotebookSettings" -> <| |> |>,
+    CellFrameColor        -> RGBColor[ "#a3c9f2" ],
+    CellFrameLabelMargins -> -32,
+    CellGroupingRules     -> "InputGrouping",
+    CellMargins           -> { { 66, 32 }, { 1, 8 } },
+    CellTrayWidgets       -> <| "ChatWidget" -> <| "Visible" -> False |> |>,
+    CounterIncrements     -> { "ChatInputCount" },
+    Evaluatable           -> True,
+    MenuSortingValue      -> 1543,
+    StyleKeyMapping       -> { "~" -> "ChatDelimiter", "'" -> "SideChat", "=" -> "WolframAlphaShort", "*" -> "Item" },
+    TaggingRules          -> <| "ChatNotebookSettings" -> <| |> |>,
+    CellFrameLabels -> {
+        {
+            None,
+            Cell[
+                BoxData @ TemplateBox[ { RGBColor[ "#a3c9f2" ], RGBColor[ "#f1f7fd" ], 20 }, "SendChatButton" ],
+                Background -> None
+            ]
+        },
+        { None, None }
+    },
 	CellDingbat -> Cell[
         BoxData @ DynamicBox @ ToBoxes[
             If[ TrueQ @ CloudSystem`$CloudNotebooks,
@@ -238,9 +259,19 @@ Cell[
     StyleKeyMapping   -> { "~" -> "ChatDelimiter", "'" -> "ChatSystemInput", "Backspace" -> "ChatInput" },
     TaggingRules      -> <| "ChatNotebookSettings" -> <| "IncludeHistory" -> False |> |>,
     CellDingbat       -> Cell[
-        BoxData @ RowBox @ { ToBoxes @ $chatInputCellDingbat, TemplateBox[ { 12 }, "Spacer1" ] },
+        BoxData @ RowBox @ {
+            DynamicBox @ ToBoxes[
+                If[ TrueQ @ CloudSystem`$CloudNotebooks,
+                    RawBoxes @ TemplateBox[ { }, "ChatIconUser" ],
+                    RawBoxes @ TemplateBox[ { }, "ChatInputActiveCellDingbat" ]
+                ],
+                StandardForm
+            ],
+            TemplateBox[ { 12 }, "Spacer1" ]
+        },
         CellFrame        -> { { 0, 0 }, { 0, 2 } },
-        CellFrameMargins -> 5
+        CellFrameColor   -> RGBColor[ "#a3c9f2" ],
+        CellFrameMargins -> 6
     ]
 ]
 
@@ -306,7 +337,7 @@ Cell[
     TaggingRules         -> <| "ChatNotebookSettings" -> <| |> |>,
     CellTrayWidgets      -> <|
         "ChatWidget"   -> <| "Visible" -> False |>,
-        "ChatFeedback" -> <| "Content" -> Cell[ BoxData @ ToBoxes @ $feedbackButtons, "ChatFeedback" ] |>
+        "ChatFeedback" -> <| "Content" -> Cell[ BoxData @ ToBoxes @ $feedbackButtonsV, "ChatFeedback" ] |>
     |>,
     menuInitializer[ "ChatOutput", RGBColor[ "#ecf0f5" ] ]
 ]
@@ -583,7 +614,8 @@ Cell[
             BaselinePosition -> Scaled[ 0.275 ],
             FrameMargins     -> { { 3, 3 }, { 2, 2 } },
             FrameStyle       -> Directive[ AbsoluteThickness[ 1 ], GrayLevel[ 0.92941 ] ],
-            ImageMargins     -> { { 0, 0 }, { 0, 0 } }
+            ImageMargins     -> { { 0, 0 }, { 0, 0 } },
+            BaseStyle        -> { "InlineCode", AutoSpacing -> False, AutoMultiplicationSymbol -> False }
         ]
     }
 ]
@@ -997,6 +1029,130 @@ Cell[
 ]
 
 
+(* ::Section::Closed:: *)
+(*Inline Chat Styles*)
+
+
+(* ::Subsection::Closed:: *)
+(*MessageAuthorLabel*)
+
+
+Cell[
+    StyleData[ "MessageAuthorLabel", StyleDefinitions -> StyleData[ "Text" ] ],
+    FontSize             -> 14,
+    FontWeight           -> "DemiBold",
+    ShowStringCharacters -> False
+]
+
+
+(* ::Subsection::Closed:: *)
+(*UserMessageLabel*)
+
+
+Cell[
+    StyleData[ "UserMessageLabel" ],
+    TemplateBoxOptions -> {
+        DisplayFunction -> Function @ PaneBox[
+            #,
+            BaseStyle    -> { "MessageAuthorLabel" },
+            ImageSize    -> { Scaled[ 1 ], Automatic },
+            Alignment    -> Right,
+            FrameMargins -> { { 0, 11 }, { 0, 0 } }
+        ]
+    }
+]
+
+
+(* ::Subsection::Closed:: *)
+(*AssistantMessageLabel*)
+
+
+Cell[
+    StyleData[ "AssistantMessageLabel" ],
+    TemplateBoxOptions -> {
+        DisplayFunction -> Function @ PaneBox[
+            #,
+            BaseStyle    -> { "MessageAuthorLabel" },
+            ImageSize    -> { Scaled[ 1 ], Automatic },
+            Alignment    -> Left,
+            FrameMargins -> { { 11, 0 }, { 0, 0 } }
+        ]
+    }
+]
+
+
+(* ::Subsection::Closed:: *)
+(*UserMessageBox*)
+
+
+Cell[
+    StyleData[ "UserMessageBox" ],
+    TemplateBoxOptions -> {
+        DisplayFunction -> Function @ Evaluate @ PaneBox[
+            FrameBox[
+                #,
+                BaseStyle      -> { "Text", Editable -> False, Selectable -> False },
+                Background     -> RGBColor[ "#edf4fc" ],
+                FrameMargins   -> 8,
+                FrameStyle     -> RGBColor[ "#a3c9f2" ],
+                RoundingRadius -> 10,
+                StripOnInput   -> False
+            ],
+            Alignment -> Right,
+            ImageSize -> { Full, Automatic }
+        ]
+    }
+]
+
+
+(* ::Subsection::Closed:: *)
+(*AssistantMessageBox*)
+
+
+Cell[
+    StyleData[ "AssistantMessageBox" ],
+    TemplateBoxOptions -> {
+        DisplayFunction -> Function @ Evaluate @ TagBox[
+            FrameBox[
+                #,
+                BaseStyle      -> { "Text", Editable -> False, Selectable -> False },
+                Background     -> RGBColor[ "#fcfdff" ],
+                FrameMargins   -> 8,
+                FrameStyle     -> RGBColor[ "#c9ccd0" ],
+                ImageSize      -> { Scaled[ 1 ], Automatic },
+                RoundingRadius -> 10,
+                StripOnInput   -> False
+            ],
+            EventHandlerTag @ {
+                "MouseEntered" :>
+                    With[ { cell = EvaluationCell[ ] },
+                        Quiet @ Needs[ "Wolfram`Chatbook`" -> None ];
+                        Symbol[ "Wolfram`Chatbook`ChatbookAction" ][ "AttachAssistantMessageButtons", cell ]
+                    ],
+                Method         -> "Preemptive",
+                PassEventsDown -> Automatic,
+                PassEventsUp   -> True
+            }
+        ]
+    }
+]
+
+
+Cell[
+    StyleData[ "FeedbackButtonsHorizontal" ],
+    TemplateBoxOptions -> { DisplayFunction -> Function @ Evaluate @ ToBoxes @ $feedbackButtonsH }
+]
+
+
+(* ::Subsection::Closed:: *)
+(*DropShadowPaneBox*)
+
+
+Cell[
+    StyleData[ "DropShadowPaneBox" ],
+    TemplateBoxOptions -> { DisplayFunction -> $dropShadowPaneBox }
+]
+
 
 (* ::Section::Closed:: *)
 (*Templates*)
@@ -1012,7 +1168,7 @@ Cell[
 		DisplayFunction -> (
 			NamespaceBox["ChatbookPersonaID",
 				DynamicModuleBox[{},
-					DynamicBox[ToBoxes @ Wolfram`Chatbook`InlineReferences`personaTemplateBoxes[1, #input, #state, #uuid]],
+					DynamicBox[ToBoxes @ Wolfram`Chatbook`Common`personaTemplateBoxes[1, #input, #state, #uuid]],
 					Initialization :> (
 						Quiet @ Needs[ "Wolfram`Chatbook`" -> None ];
 						Wolfram`Chatbook`InlineReferences`Private`$lastInlineReferenceCell = EvaluationCell[ ]
@@ -1034,7 +1190,7 @@ Cell[
 		DisplayFunction -> (
 			NamespaceBox["ChatbookModifierID",
 				DynamicModuleBox[{},
-					DynamicBox[ToBoxes @ Wolfram`Chatbook`InlineReferences`modifierTemplateBoxes[1, #input, #params, #state, #uuid]],
+					DynamicBox[ToBoxes @ Wolfram`Chatbook`Common`modifierTemplateBoxes[1, #input, #params, #state, #uuid]],
 					Initialization :> (
 						Quiet @ Needs[ "Wolfram`Chatbook`" -> None ];
 						Wolfram`Chatbook`InlineReferences`Private`$lastInlineReferenceCell = EvaluationCell[ ]
@@ -1056,7 +1212,7 @@ Cell[
 		DisplayFunction -> (
 			NamespaceBox["ChatbookFunctionID",
 				DynamicModuleBox[{},
-					DynamicBox[ToBoxes @ Wolfram`Chatbook`InlineReferences`functionTemplateBoxes[1, #input, #params, #state, #uuid]],
+					DynamicBox[ToBoxes @ Wolfram`Chatbook`Common`functionTemplateBoxes[1, #input, #params, #state, #uuid]],
 					Initialization :> (
 						Quiet @ Needs[ "Wolfram`Chatbook`" -> None ];
 						Wolfram`Chatbook`InlineReferences`Private`$lastInlineReferenceCell = EvaluationCell[ ]
@@ -1078,7 +1234,7 @@ Cell[
 		DisplayFunction -> (
 			NamespaceBox["ChatbookWLTemplateID",
 				DynamicModuleBox[{},
-					DynamicBox[ToBoxes @ Wolfram`Chatbook`InlineReferences`wlTemplateBoxes[1, #input, #state, #uuid]],
+					DynamicBox[ToBoxes @ Wolfram`Chatbook`Common`wlTemplateBoxes[1, #input, #state, #uuid]],
 					Initialization :> (
 						Quiet @ Needs[ "Wolfram`Chatbook`" -> None ];
 						Wolfram`Chatbook`InlineReferences`Private`$lastInlineReferenceCell = EvaluationCell[ ]
@@ -1140,7 +1296,7 @@ Cell[
         DisplayFunction -> Function[
             Evaluate @ ToBoxes @ Button[
                 MouseAppearance[
-                    Tooltip[ RawBoxes @ TemplateBox[ { }, "ChatWidgetIcon" ], "Send to LLM" ],
+                    Tooltip[ RawBoxes @ TemplateBox[ { }, "ChatWidgetIcon" ], tr["StylesheetChatWidgetButtonTooltip"] ],
                     "LinkHand"
                 ],
                 With[ { $CellContext`cell = ParentCell @ EvaluationCell[ ] },
@@ -1172,6 +1328,138 @@ Cell[
     }
 ]
 
+
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*DiscardedMaterialOpener*)
+
+
+Cell[
+    StyleData[ "DiscardedMaterialOpener" ],
+    TemplateBoxOptions -> {
+        DisplayFunction -> Function @ DynamicModuleBox[
+            { Typeset`hover$$ = False, Typeset`open$$ = False },
+            PaneSelectorBox[
+                {
+                    False -> TagBox[
+                        GridBox[
+                            { { $discardedMaterialLabel } },
+                            DefaultBaseStyle -> "Column",
+                            GridBoxAlignment -> { "Columns" -> { { Left } } },
+                            GridBoxItemSize  -> { "Columns" -> { { Automatic } }, "Rows" -> { { Automatic } } },
+                            GridBoxSpacings  -> { "Columns" -> { { Automatic } }, "Rows" -> { { 0.25 } } }
+                        ],
+                        "Column"
+                    ],
+                    True -> TagBox[
+                        GridBox[
+                            {
+                                { $discardedMaterialLabel },
+                                {
+                                    FrameBox[
+                                        #1,
+                                        Background     -> RGBColor[ 0.94902, 0.96863, 0.98824 ],
+                                        FrameMargins   -> 10,
+                                        FrameStyle     -> RGBColor[ 0.9098, 0.93333, 0.95294 ],
+                                        ImageSize      -> { Full, Automatic },
+                                        RoundingRadius -> 5,
+                                        StripOnInput   -> False
+                                    ]
+                                }
+                            },
+                            DefaultBaseStyle -> "Column",
+                            GridBoxAlignment -> { "Columns" -> { { Left } } },
+                            GridBoxItemSize  -> { "Columns" -> { { Automatic } }, "Rows" -> { { Automatic } } },
+                            GridBoxSpacings  -> { "Columns" -> { { Automatic } }, "Rows" -> { { 0.25 } } }
+                        ],
+                        "Column"
+                    ]
+                },
+                Dynamic @ Typeset`open$$,
+                ImageMargins   -> 10,
+                ImageSize      -> Automatic,
+                Alignment      -> Left,
+                ContentPadding -> False
+            ],
+            DynamicModuleValues :> { },
+            UnsavedVariables    :> { Typeset`hover$$ }
+        ]
+    }
+]
+
+
+Cell[
+    StyleData[ "DiscardedMaterialOpenerIcon" ],
+    TemplateBoxOptions -> {
+        DisplayFunction -> Function @ GraphicsBox[
+            {
+                #1,
+                Thickness[ 0.090909 ],
+                Opacity[ 1.0 ],
+                FilledCurveBox[
+                    {
+                        {
+                            { 0, 2, 0 },
+                            { 0, 1, 0 },
+                            { 0, 1, 0 },
+                            { 0, 1, 0 },
+                            { 0, 1, 0 },
+                            { 0, 1, 0 },
+                            { 0, 1, 0 },
+                            { 0, 1, 0 },
+                            { 0, 1, 0 },
+                            { 0, 1, 0 },
+                            { 0, 1, 0 }
+                        }
+                    },
+                    {
+                        {
+                            { 8.5, 4.5 },
+                            { 6.5, 4.5 },
+                            { 6.5, 2.5 },
+                            { 4.5, 2.5 },
+                            { 4.5, 4.5 },
+                            { 2.5, 4.5 },
+                            { 2.5, 6.5 },
+                            { 4.5, 6.5 },
+                            { 4.5, 8.5 },
+                            { 6.5, 8.5 },
+                            { 6.5, 6.5 },
+                            { 8.5, 6.5 }
+                        }
+                    }
+                ]
+            },
+            AspectRatio      -> Automatic,
+            BaselinePosition -> Center -> Center,
+            ImageSize        -> { 11.0, 11.0 },
+            PlotRange        -> { { 0.0, 11.0 }, { 0.0, 11.0 } }
+        ]
+    }
+]
+
+
+Cell[
+    StyleData[ "DiscardedMaterialCloserIcon" ],
+    TemplateBoxOptions -> {
+        DisplayFunction -> Function @ GraphicsBox[
+            {
+                #1,
+                Thickness[ 0.090909 ],
+                Opacity[ 1.0 ],
+                FilledCurveBox[
+                    { { { 0, 2, 0 }, { 0, 1, 0 }, { 0, 1, 0 } } },
+                    { { { 8.5, 4.5 }, { 2.5, 4.5 }, { 2.5, 6.5 }, { 8.5, 6.5 } } }
+                ]
+            },
+            AspectRatio      -> Automatic,
+            BaselinePosition -> Center -> Center,
+            ImageSize        -> { 11.0, 11.0 },
+            PlotRange        -> { { 0.0, 11.0 }, { 0.0, 11.0 } }
+        ]
+    }
+]
 
 
 (* ::Section::Closed:: *)
