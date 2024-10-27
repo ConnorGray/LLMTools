@@ -4,7 +4,24 @@ BeginPackage[ "Wolfram`ChatbookScripts`" ];
 
 If[ ! TrueQ @ $loadedDefinitions, Get @ FileNameJoin @ { DirectoryName @ $InputFileName, "Common.wl" } ];
 
+(* ::**************************************************************************************************************:: *)
+(* ::Section::Closed:: *)
+(*Initialization*)
 Needs[ "Wolfram`PacletCICD`" -> "cicd`" ];
+
+(* ::**************************************************************************************************************:: *)
+(* ::Section::Closed:: *)
+(*Rename Default Stylesheet*)
+(* The default stylesheet is originally saved with the name ChatbookDefault.nb to make development easier. This is
+   allows faster turnarounds when testing, since you do not need to quit the FE and delete the existing stylesheet
+   in order to build a new one. However, this means that the stylesheet needs to be renamed to Default.nb when building
+   the paclet. We do it here, since we are not using the FE when running the build script.
+*)
+cFile @ RenameFile[
+    cFile @ FileNameJoin @ { $pacletDir, "FrontEnd", "StyleSheets", "ChatbookDefault.nb" },
+    FileNameJoin @ { $pacletDir, "FrontEnd", "StyleSheets", "Default.nb" },
+    OverwriteTarget -> True
+];
 
 (* ::**************************************************************************************************************:: *)
 (* ::Section::Closed:: *)
