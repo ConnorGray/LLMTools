@@ -767,7 +767,7 @@ Notebook[
   Cell[
    StyleData["ChatStyleSheetInformation"],
    TaggingRules -> <|
-    "StyleSheetVersion" -> "1.5.2.3939020254",
+    "StyleSheetVersion" -> "1.5.2.3939021823",
     "StyleSheetName" -> "Default.nb"
    |>
   ],
@@ -816,8 +816,13 @@ Notebook[
      CellFrame -> 0,
      CellMargins -> 0
     ],
-   CellMargins -> {{66, 25}, {1, 8}},
-   StyleKeyMapping -> {"~" -> "ChatDelimiter", "'" -> "SideChat"},
+   CellMargins -> {{66, 32}, {1, 8}},
+   StyleKeyMapping -> {
+    "~" -> "ChatDelimiter",
+    "'" -> "SideChat",
+    "=" -> "WolframAlphaShort",
+    "*" -> "Item"
+   },
    Evaluatable -> True,
    CellGroupingRules -> "InputGrouping",
    TaggingRules -> <|"ChatNotebookSettings" -> <||>|>,
@@ -887,6 +892,26 @@ Notebook[
      ]
    },
    CellFrameColor -> RGBColor[0.639216, 0.788235, 0.94902],
+   CellFrameLabels -> {
+    {
+     None,
+     Cell[
+      BoxData[
+       TemplateBox[
+        {
+         RGBColor[0.639216, 0.788235, 0.94902],
+         RGBColor[0.945098, 0.968627, 0.992157],
+         20
+        },
+        "SendChatButton"
+       ]
+      ],
+      Background -> None
+     ]
+    },
+    {None, None}
+   },
+   CellFrameLabelMargins -> -32,
    CounterIncrements -> {"ChatInputCount"},
    MenuSortingValue -> 1543
   ],
@@ -976,50 +1001,22 @@ Notebook[
      BoxData[
       RowBox[
        {
-        PaneSelectorBox[
-         {
-          True ->
-           DynamicModuleBox[
-            {Wolfram`Chatbook`UI`Private`cell$$},
-            DynamicBox[
-             ToBoxes[
-              Catch[
-               Wolfram`Chatbook`Dynamics`Private`$chatBlockTrigger;
-               Wolfram`Chatbook`UI`MakeChatInputActiveCellDingbat[
-                Wolfram`Chatbook`UI`Private`cell$$
-               ],
-               Blank[]
-              ],
-              StandardForm
-             ],
-             TrackedSymbols :> {Wolfram`Chatbook`Dynamics`Private`$chatBlockTrigger}
-            ],
-            Initialization :>
-             (Wolfram`Chatbook`UI`Private`cell$$ = EvaluationCell[];
-             Needs["Wolfram`Chatbook`" -> None]),
-            DynamicModuleValues :> { },
-            UnsavedVariables :> {Wolfram`Chatbook`UI`Private`cell$$}
-           ],
-          False ->
-           FrameBox[
-            TemplateBox[{}, "ChatIconUser"],
-            RoundingRadius -> 3,
-            FrameMargins -> 2,
-            ImageMargins -> {{0, 3}, {0, 0}},
-            FrameStyle -> GrayLevel[0, 0],
-            FrameMargins -> 0,
-            StripOnInput -> False
-           ]
-         },
-         Dynamic[CurrentValue["MouseOver"]],
-         ImageSize -> All
+        DynamicBox[
+         ToBoxes[
+          If[ TrueQ[CloudSystem`$CloudNotebooks],
+           RawBoxes[TemplateBox[{}, "ChatIconUser"]],
+           RawBoxes[TemplateBox[{}, "ChatInputActiveCellDingbat"]]
+          ],
+          StandardForm
+         ]
         ],
         TemplateBox[{12}, "Spacer1"]
        }
       ]
      ],
      CellFrame -> {{0, 0}, {0, 2}},
-     CellFrameMargins -> 5
+     CellFrameColor -> RGBColor[0.639216, 0.788235, 0.94902],
+     CellFrameMargins -> 6
     ],
    CellMargins -> {{79, 26}, {Inherited, Inherited}},
    CellDingbatMargin -> 0,
@@ -1091,9 +1088,147 @@ Notebook[
     "ChatWidget" -> <|"Visible" -> False|>,
     "ChatFeedback" -> <|
      "Content" ->
-      Cell[BoxData["$feedbackButtons"], "ChatFeedback"]
-    |>,
-    "GearMenu" -> <|"Condition" -> False|>
+      Cell[
+       BoxData[
+        TagBox[
+         GridBox[
+          {
+           {
+            ButtonBox[
+             TagBox[
+              TagBox[
+               TooltipBox[
+                PaneSelectorBox[
+                 {
+                  False -> TemplateBox[{}, "ThumbsUpInactive"],
+                  True -> TemplateBox[{}, "ThumbsUpActive"]
+                 },
+                 Dynamic[CurrentValue["MouseOver"]],
+                 ImageSize -> Automatic,
+                 FrameMargins -> 0
+                ],
+                DynamicBox[
+                 ToBoxes[
+                  FEPrivate`FrontEndResource[
+                   "ChatbookStrings",
+                   "StylesheetFeedbackButtonTooltip"
+                  ],
+                  StandardForm
+                 ]
+                ]
+               ],
+               Function[
+                Annotation[
+                 #1,
+                 Dynamic[
+                  FEPrivate`FrontEndResource[
+                   "ChatbookStrings",
+                   "StylesheetFeedbackButtonTooltip"
+                  ]
+                 ],
+                 "Tooltip"
+                ]
+               ]
+              ],
+              MouseAppearanceTag["LinkHand"]
+             ],
+             ButtonFunction :>
+              With[ { Wolfram`ChatNB`cell$ = EvaluationCell[] },
+               Quiet[Needs["Wolfram`Chatbook`" -> None]];
+               Catch[
+                Symbol["Wolfram`Chatbook`ChatbookAction"][
+                 "SendFeedback",
+                 Wolfram`ChatNB`cell$,
+                 True
+                ],
+                Blank[]
+               ]
+              ],
+             Appearance ->
+              Dynamic[
+               FEPrivate`FrontEndResource[
+                "FEExpressions",
+                "SuppressMouseDownNinePatchAppearance"
+               ]
+              ],
+             Evaluator -> Automatic,
+             Method -> "Preemptive"
+            ]
+           },
+           {
+            ButtonBox[
+             TagBox[
+              TagBox[
+               TooltipBox[
+                PaneSelectorBox[
+                 {
+                  False -> TemplateBox[{}, "ThumbsDownInactive"],
+                  True -> TemplateBox[{}, "ThumbsDownActive"]
+                 },
+                 Dynamic[CurrentValue["MouseOver"]],
+                 ImageSize -> Automatic,
+                 FrameMargins -> 0
+                ],
+                DynamicBox[
+                 ToBoxes[
+                  FEPrivate`FrontEndResource[
+                   "ChatbookStrings",
+                   "StylesheetFeedbackButtonTooltip"
+                  ],
+                  StandardForm
+                 ]
+                ]
+               ],
+               Function[
+                Annotation[
+                 #1,
+                 Dynamic[
+                  FEPrivate`FrontEndResource[
+                   "ChatbookStrings",
+                   "StylesheetFeedbackButtonTooltip"
+                  ]
+                 ],
+                 "Tooltip"
+                ]
+               ]
+              ],
+              MouseAppearanceTag["LinkHand"]
+             ],
+             ButtonFunction :>
+              With[ { Wolfram`ChatNB`cell$ = EvaluationCell[] },
+               Quiet[Needs["Wolfram`Chatbook`" -> None]];
+               Catch[
+                Symbol["Wolfram`Chatbook`ChatbookAction"][
+                 "SendFeedback",
+                 Wolfram`ChatNB`cell$,
+                 False
+                ],
+                Blank[]
+               ]
+              ],
+             Appearance ->
+              Dynamic[
+               FEPrivate`FrontEndResource[
+                "FEExpressions",
+                "SuppressMouseDownNinePatchAppearance"
+               ]
+              ],
+             Evaluator -> Automatic,
+             Method -> "Preemptive"
+            ]
+           }
+          },
+          GridBoxAlignment -> {"Columns" -> {{Left}}},
+          DefaultBaseStyle -> "Column",
+          GridBoxItemSize -> {"Columns" -> {{Automatic}}, "Rows" -> {{Automatic}}},
+          GridBoxSpacings -> {"Columns" -> {{0}}, "Rows" -> {0, 0.25, 0}}
+         ],
+         "Column"
+        ]
+       ],
+       "ChatFeedback"
+      ]
+    |>
    |>,
    Initialization :>
     If[ Not[TrueQ[CloudSystem`$CloudNotebooks]],
@@ -1680,7 +1815,12 @@ Notebook[
        FrameMargins -> {{3, 3}, {2, 2}},
        FrameStyle ->
         Directive[AbsoluteThickness[1], GrayLevel[0.92941]],
-       ImageMargins -> {{0, 0}, {0, 0}}
+       ImageMargins -> {{0, 0}, {0, 0}},
+       BaseStyle -> {
+        "InlineCode",
+        AutoSpacing -> False,
+        AutoMultiplicationSymbol -> False
+       }
       ]
      ])
    }
@@ -18152,6 +18292,267 @@ Notebook[
    }
   ],
   Cell[
+   StyleData[
+    "MessageAuthorLabel",
+    StyleDefinitions -> StyleData["Text"]
+   ],
+   ShowStringCharacters -> False,
+   FontSize -> 14,
+   FontWeight -> "DemiBold"
+  ],
+  Cell[
+   StyleData["UserMessageLabel"],
+   TemplateBoxOptions -> {
+    DisplayFunction ->
+     (Function[
+      PaneBox[
+       #1,
+       BaseStyle -> {"MessageAuthorLabel"},
+       ImageSize -> {Scaled[1], Automatic},
+       Alignment -> Right,
+       FrameMargins -> {{0, 11}, {0, 0}}
+      ]
+     ])
+   }
+  ],
+  Cell[
+   StyleData["AssistantMessageLabel"],
+   TemplateBoxOptions -> {
+    DisplayFunction ->
+     (Function[
+      PaneBox[
+       #1,
+       BaseStyle -> {"MessageAuthorLabel"},
+       ImageSize -> {Scaled[1], Automatic},
+       Alignment -> Left,
+       FrameMargins -> {{11, 0}, {0, 0}}
+      ]
+     ])
+   }
+  ],
+  Cell[
+   StyleData["UserMessageBox"],
+   TemplateBoxOptions -> {
+    DisplayFunction ->
+     (Function[
+      PaneBox[
+       FrameBox[
+        #1,
+        BaseStyle -> {"Text", Editable -> False, Selectable -> False},
+        Background -> RGBColor[0.929412, 0.956863, 0.988235],
+        FrameMargins -> 8,
+        FrameStyle -> RGBColor[0.639216, 0.788235, 0.94902],
+        RoundingRadius -> 10,
+        StripOnInput -> False
+       ],
+       Alignment -> Right,
+       ImageSize -> {Full, Automatic}
+      ]
+     ])
+   }
+  ],
+  Cell[
+   StyleData["AssistantMessageBox"],
+   TemplateBoxOptions -> {
+    DisplayFunction ->
+     (Function[
+      TagBox[
+       FrameBox[
+        #1,
+        BaseStyle -> {"Text", Editable -> False, Selectable -> False},
+        Background -> RGBColor[0.988235, 0.992157, 1.0],
+        FrameMargins -> 8,
+        FrameStyle -> RGBColor[0.788235, 0.8, 0.815686],
+        ImageSize -> {Scaled[1], Automatic},
+        RoundingRadius -> 10,
+        StripOnInput -> False
+       ],
+       EventHandlerTag[
+        {
+         "MouseEntered" :>
+          With[ { Wolfram`ChatNB`cell = EvaluationCell[] },
+           Quiet[Needs["Wolfram`Chatbook`" -> None]];
+           Symbol["Wolfram`Chatbook`ChatbookAction"][
+            "AttachAssistantMessageButtons",
+            Wolfram`ChatNB`cell
+           ]
+          ],
+         Method -> "Preemptive",
+         PassEventsDown -> Automatic,
+         PassEventsUp -> True
+        }
+       ]
+      ]
+     ])
+   }
+  ],
+  Cell[
+   StyleData["FeedbackButtonsHorizontal"],
+   TemplateBoxOptions -> {
+    DisplayFunction ->
+     (Function[
+      TagBox[
+       GridBox[
+        {
+         {
+          ButtonBox[
+           TagBox[
+            TagBox[
+             TooltipBox[
+              PaneSelectorBox[
+               {
+                False -> TemplateBox[{}, "ThumbsUpInactive"],
+                True -> TemplateBox[{}, "ThumbsUpActive"]
+               },
+               Dynamic[CurrentValue["MouseOver"]],
+               ImageSize -> Automatic,
+               FrameMargins -> 0
+              ],
+              DynamicBox[
+               ToBoxes[
+                FEPrivate`FrontEndResource[
+                 "ChatbookStrings",
+                 "StylesheetFeedbackButtonTooltip"
+                ],
+                StandardForm
+               ]
+              ]
+             ],
+             Function[
+              Annotation[
+               #1,
+               Dynamic[
+                FEPrivate`FrontEndResource[
+                 "ChatbookStrings",
+                 "StylesheetFeedbackButtonTooltip"
+                ]
+               ],
+               "Tooltip"
+              ]
+             ]
+            ],
+            MouseAppearanceTag["LinkHand"]
+           ],
+           ButtonFunction :>
+            With[ { Wolfram`ChatNB`cell$ = EvaluationCell[] },
+             Quiet[Needs["Wolfram`Chatbook`" -> None]];
+             Catch[
+              Symbol["Wolfram`Chatbook`ChatbookAction"][
+               "SendFeedback",
+               Wolfram`ChatNB`cell$,
+               True
+              ],
+              Blank[]
+             ]
+            ],
+           Appearance ->
+            Dynamic[
+             FEPrivate`FrontEndResource[
+              "FEExpressions",
+              "SuppressMouseDownNinePatchAppearance"
+             ]
+            ],
+           Evaluator -> Automatic,
+           Method -> "Preemptive"
+          ],
+          ButtonBox[
+           TagBox[
+            TagBox[
+             TooltipBox[
+              PaneSelectorBox[
+               {
+                False -> TemplateBox[{}, "ThumbsDownInactive"],
+                True -> TemplateBox[{}, "ThumbsDownActive"]
+               },
+               Dynamic[CurrentValue["MouseOver"]],
+               ImageSize -> Automatic,
+               FrameMargins -> 0
+              ],
+              DynamicBox[
+               ToBoxes[
+                FEPrivate`FrontEndResource[
+                 "ChatbookStrings",
+                 "StylesheetFeedbackButtonTooltip"
+                ],
+                StandardForm
+               ]
+              ]
+             ],
+             Function[
+              Annotation[
+               #1,
+               Dynamic[
+                FEPrivate`FrontEndResource[
+                 "ChatbookStrings",
+                 "StylesheetFeedbackButtonTooltip"
+                ]
+               ],
+               "Tooltip"
+              ]
+             ]
+            ],
+            MouseAppearanceTag["LinkHand"]
+           ],
+           ButtonFunction :>
+            With[ { Wolfram`ChatNB`cell$ = EvaluationCell[] },
+             Quiet[Needs["Wolfram`Chatbook`" -> None]];
+             Catch[
+              Symbol["Wolfram`Chatbook`ChatbookAction"][
+               "SendFeedback",
+               Wolfram`ChatNB`cell$,
+               False
+              ],
+              Blank[]
+             ]
+            ],
+           Appearance ->
+            Dynamic[
+             FEPrivate`FrontEndResource[
+              "FEExpressions",
+              "SuppressMouseDownNinePatchAppearance"
+             ]
+            ],
+           Evaluator -> Automatic,
+           Method -> "Preemptive"
+          ]
+         }
+        },
+        AutoDelete -> False,
+        GridBoxItemSize -> {"Columns" -> {{Automatic}}, "Rows" -> {{Automatic}}},
+        GridBoxSpacings -> {"Columns" -> {{0.2}}}
+       ],
+       "Grid"
+      ]
+     ])
+   }
+  ],
+  Cell[
+   StyleData["DropShadowPaneBox"],
+   TemplateBoxOptions -> {
+    DisplayFunction ->
+     (Function[
+      PaneBox[
+       PanelBox[
+        #1,
+        Appearance ->
+         Image[
+          CompressedData[
+           "\n1:eJy9lU1LAlEUhqdxdIYYQ5gkwQFNXLiQlkMhLqJVIQhGCK7UUmljoEG0m7/p\n3/AP2HvlvXK6STnFNPB4mcM5z5x7nI/z8UtvaluWtfTw0xu9XS8Wo/f7Ak4e\n5svn2XzydDt/ncwmi8txBsEz4oBNgiNh+vaI49gSHBGbZICzh4zI0TU7zx63\n9KraLMgBF3gCl/GsuMYnv+GWToe1ynMMfJAX+Ix7zHOMa0i3vqb2uqxVngII\nQFEQMJ5nniv8W5fhtg3vCR0lEIIKqHINGQ+YJ/224dazyAnvKSiDGmiAJrjg\n2mC8zDztz+nZGO4s55dnP6quTl8EWqDNNWK8zryAdR490i17LnC/NdZfgZvV\narXRqHPGL5hXYt2ud/08iDn77CHkviN6usq5Xq+1u8t4xLyQdb6eu37O6Nbz\nKPL/anL/d6Bv9N1nvMW8Cuv0XBwxE9Nd5X7VfDtgAB7BlOuA8TbzqgncX/oG\nQ3qHv+j723nTN+D647yT3Cfss8P1oPvkH+7vNJ/LNN8nab4HrTi997cVp/vd\n2ef/8/fy0CPpd/4Dbscq/g==\n      "
+          ],
+          "Byte",
+          ColorSpace -> "RGB",
+          ImageResolution -> 72,
+          Interleaving -> True
+         ],
+        ContentPadding -> False,
+        FrameMargins -> {{0, 0}, {0, 0}}
+       ],
+       ImageMargins -> {{40, 50}, {0, 0}}
+      ]
+     ])
+   }
+  ],
+  Cell[
    StyleData["ChatbookPersona"],
    TemplateBoxOptions -> {
     DisplayFunction ->
@@ -18162,7 +18563,7 @@ Notebook[
         { },
         DynamicBox[
          ToBoxes[
-          Wolfram`Chatbook`InlineReferences`personaTemplateBoxes[
+          Wolfram`Chatbook`Common`personaTemplateBoxes[
            1,
            #input,
            #state,
@@ -18192,7 +18593,7 @@ Notebook[
         { },
         DynamicBox[
          ToBoxes[
-          Wolfram`Chatbook`InlineReferences`modifierTemplateBoxes[
+          Wolfram`Chatbook`Common`modifierTemplateBoxes[
            1,
            #input,
            #params,
@@ -18223,7 +18624,7 @@ Notebook[
         { },
         DynamicBox[
          ToBoxes[
-          Wolfram`Chatbook`InlineReferences`functionTemplateBoxes[
+          Wolfram`Chatbook`Common`functionTemplateBoxes[
            1,
            #input,
            #params,
@@ -18254,7 +18655,7 @@ Notebook[
         { },
         DynamicBox[
          ToBoxes[
-          Wolfram`Chatbook`InlineReferences`wlTemplateBoxes[
+          Wolfram`Chatbook`Common`wlTemplateBoxes[
            1,
            #input,
            #state,
@@ -18312,10 +18713,28 @@ Notebook[
         TagBox[
          TooltipBox[
           TemplateBox[{}, "ChatWidgetIcon"],
-          "\"Send to LLM\"",
-          TooltipStyle -> "TextStyling"
+          DynamicBox[
+           ToBoxes[
+            FEPrivate`FrontEndResource[
+             "ChatbookStrings",
+             "StylesheetChatWidgetButtonTooltip"
+            ],
+            StandardForm
+           ]
+          ]
          ],
-         Annotation[#1, "Send to LLM", "Tooltip"] &
+         Function[
+          Annotation[
+           #1,
+           Dynamic[
+            FEPrivate`FrontEndResource[
+             "ChatbookStrings",
+             "StylesheetChatWidgetButtonTooltip"
+            ]
+           ],
+           "Tooltip"
+          ]
+         ]
         ],
         MouseAppearanceTag["LinkHand"]
        ],
@@ -18354,6 +18773,296 @@ Notebook[
        FontSize -> 10,
        FontColor -> RGBColor[0.55433, 0.707942, 0.925795],
        FontWeight -> Plain
+      ]
+     ])
+   }
+  ],
+  Cell[
+   StyleData["DiscardedMaterialOpener"],
+   TemplateBoxOptions -> {
+    DisplayFunction ->
+     (Function[
+      DynamicModuleBox[
+       {Typeset`hover$$ = False, Typeset`open$$ = False},
+       PaneSelectorBox[
+        {
+         False ->
+          TagBox[
+           GridBox[
+            {
+             {
+              TagBox[
+               TagBox[
+                FrameBox[
+                 TagBox[
+                  GridBox[
+                   {
+                    {
+                     TemplateBox[{}, "DiscardedMaterial"],
+                     "\"Discarded material\"",
+                     PaneSelectorBox[
+                      {
+                       {True, False} ->
+                        TemplateBox[
+                         {RGBColor[0.3451, 0.72157, 0.98039]},
+                         "DiscardedMaterialOpenerIcon"
+                        ],
+                       {False, False} ->
+                        TemplateBox[
+                         {GrayLevel[0.7451]},
+                         "DiscardedMaterialOpenerIcon"
+                        ],
+                       {True, True} ->
+                        TemplateBox[
+                         {RGBColor[0.3451, 0.72157, 0.98039]},
+                         "DiscardedMaterialCloserIcon"
+                        ],
+                       {False, True} ->
+                        TemplateBox[
+                         {GrayLevel[0.7451]},
+                         "DiscardedMaterialCloserIcon"
+                        ]
+                      },
+                      Dynamic[{Typeset`hover$$, Typeset`open$$}]
+                     ]
+                    }
+                   },
+                   GridBoxAlignment -> {"Columns" -> {{Automatic}}, "Rows" -> {{Baseline}}},
+                   AutoDelete -> False,
+                   GridBoxItemSize -> {"Columns" -> {{Automatic}}, "Rows" -> {{Automatic}}}
+                  ],
+                  "Grid"
+                 ],
+                 Background ->
+                  Dynamic[
+                   FEPrivate`If[
+                    Typeset`hover$$,
+                    GrayLevel[1],
+                    RGBColor[0.94902, 0.96863, 0.98824]
+                   ]
+                  ],
+                 BaseStyle -> {
+                  "Text",
+                  "IconizedDefaultName",
+                  ShowStringCharacters -> False
+                 },
+                 FrameMargins -> 2,
+                 FrameStyle -> RGBColor[0.9098, 0.93333, 0.95294],
+                 RoundingRadius -> 5,
+                 StripOnInput -> False
+                ],
+                EventHandlerTag[
+                 {
+                  "MouseEntered" :> FEPrivate`Set[Typeset`hover$$, True],
+                  "MouseExited" :> FEPrivate`Set[Typeset`hover$$, False],
+                  "MouseClicked" :>
+                   FEPrivate`Set[
+                    Typeset`open$$,
+                    FEPrivate`If[Typeset`open$$, False, True]
+                   ],
+                  PassEventsDown -> True,
+                  Method -> "Preemptive",
+                  PassEventsUp -> True
+                 }
+                ]
+               ],
+               MouseAppearanceTag["LinkHand"]
+              ]
+             }
+            },
+            DefaultBaseStyle -> "Column",
+            GridBoxAlignment -> {"Columns" -> {{Left}}},
+            GridBoxItemSize -> {"Columns" -> {{Automatic}}, "Rows" -> {{Automatic}}},
+            GridBoxSpacings -> {"Columns" -> {{Automatic}}, "Rows" -> {{0.25}}}
+           ],
+           "Column"
+          ],
+         True ->
+          TagBox[
+           GridBox[
+            {
+             {
+              TagBox[
+               TagBox[
+                FrameBox[
+                 TagBox[
+                  GridBox[
+                   {
+                    {
+                     TemplateBox[{}, "DiscardedMaterial"],
+                     "\"Discarded material\"",
+                     PaneSelectorBox[
+                      {
+                       {True, False} ->
+                        TemplateBox[
+                         {RGBColor[0.3451, 0.72157, 0.98039]},
+                         "DiscardedMaterialOpenerIcon"
+                        ],
+                       {False, False} ->
+                        TemplateBox[
+                         {GrayLevel[0.7451]},
+                         "DiscardedMaterialOpenerIcon"
+                        ],
+                       {True, True} ->
+                        TemplateBox[
+                         {RGBColor[0.3451, 0.72157, 0.98039]},
+                         "DiscardedMaterialCloserIcon"
+                        ],
+                       {False, True} ->
+                        TemplateBox[
+                         {GrayLevel[0.7451]},
+                         "DiscardedMaterialCloserIcon"
+                        ]
+                      },
+                      Dynamic[{Typeset`hover$$, Typeset`open$$}]
+                     ]
+                    }
+                   },
+                   GridBoxAlignment -> {"Columns" -> {{Automatic}}, "Rows" -> {{Baseline}}},
+                   AutoDelete -> False,
+                   GridBoxItemSize -> {"Columns" -> {{Automatic}}, "Rows" -> {{Automatic}}}
+                  ],
+                  "Grid"
+                 ],
+                 Background ->
+                  Dynamic[
+                   FEPrivate`If[
+                    Typeset`hover$$,
+                    GrayLevel[1],
+                    RGBColor[0.94902, 0.96863, 0.98824]
+                   ]
+                  ],
+                 BaseStyle -> {
+                  "Text",
+                  "IconizedDefaultName",
+                  ShowStringCharacters -> False
+                 },
+                 FrameMargins -> 2,
+                 FrameStyle -> RGBColor[0.9098, 0.93333, 0.95294],
+                 RoundingRadius -> 5,
+                 StripOnInput -> False
+                ],
+                EventHandlerTag[
+                 {
+                  "MouseEntered" :> FEPrivate`Set[Typeset`hover$$, True],
+                  "MouseExited" :> FEPrivate`Set[Typeset`hover$$, False],
+                  "MouseClicked" :>
+                   FEPrivate`Set[
+                    Typeset`open$$,
+                    FEPrivate`If[Typeset`open$$, False, True]
+                   ],
+                  PassEventsDown -> True,
+                  Method -> "Preemptive",
+                  PassEventsUp -> True
+                 }
+                ]
+               ],
+               MouseAppearanceTag["LinkHand"]
+              ]
+             },
+             {
+              FrameBox[
+               #1,
+               Background -> RGBColor[0.94902, 0.96863, 0.98824],
+               FrameMargins -> 10,
+               FrameStyle -> RGBColor[0.9098, 0.93333, 0.95294],
+               ImageSize -> {Full, Automatic},
+               RoundingRadius -> 5,
+               StripOnInput -> False
+              ]
+             }
+            },
+            DefaultBaseStyle -> "Column",
+            GridBoxAlignment -> {"Columns" -> {{Left}}},
+            GridBoxItemSize -> {"Columns" -> {{Automatic}}, "Rows" -> {{Automatic}}},
+            GridBoxSpacings -> {"Columns" -> {{Automatic}}, "Rows" -> {{0.25}}}
+           ],
+           "Column"
+          ]
+        },
+        Dynamic[Typeset`open$$],
+        ImageMargins -> 10,
+        ImageSize -> Automatic,
+        Alignment -> Left,
+        ContentPadding -> False
+       ],
+       DynamicModuleValues :> { },
+       UnsavedVariables :> {Typeset`hover$$}
+      ]
+     ])
+   }
+  ],
+  Cell[
+   StyleData["DiscardedMaterialOpenerIcon"],
+   TemplateBoxOptions -> {
+    DisplayFunction ->
+     (Function[
+      GraphicsBox[
+       {
+        #1,
+        Thickness[0.090909],
+        Opacity[1.0],
+        FilledCurveBox[
+         {
+          {
+           {0, 2, 0},
+           {0, 1, 0},
+           {0, 1, 0},
+           {0, 1, 0},
+           {0, 1, 0},
+           {0, 1, 0},
+           {0, 1, 0},
+           {0, 1, 0},
+           {0, 1, 0},
+           {0, 1, 0},
+           {0, 1, 0}
+          }
+         },
+         {
+          {
+           {8.5, 4.5},
+           {6.5, 4.5},
+           {6.5, 2.5},
+           {4.5, 2.5},
+           {4.5, 4.5},
+           {2.5, 4.5},
+           {2.5, 6.5},
+           {4.5, 6.5},
+           {4.5, 8.5},
+           {6.5, 8.5},
+           {6.5, 6.5},
+           {8.5, 6.5}
+          }
+         }
+        ]
+       },
+       AspectRatio -> Automatic,
+       BaselinePosition -> Center -> Center,
+       ImageSize -> {11.0, 11.0},
+       PlotRange -> {{0.0, 11.0}, {0.0, 11.0}}
+      ]
+     ])
+   }
+  ],
+  Cell[
+   StyleData["DiscardedMaterialCloserIcon"],
+   TemplateBoxOptions -> {
+    DisplayFunction ->
+     (Function[
+      GraphicsBox[
+       {
+        #1,
+        Thickness[0.090909],
+        Opacity[1.0],
+        FilledCurveBox[
+         {{{0, 2, 0}, {0, 1, 0}, {0, 1, 0}}},
+         {{{8.5, 4.5}, {2.5, 4.5}, {2.5, 6.5}, {8.5, 6.5}}}
+        ]
+       },
+       AspectRatio -> Automatic,
+       BaselinePosition -> Center -> Center,
+       ImageSize -> {11.0, 11.0},
+       PlotRange -> {{0.0, 11.0}, {0.0, 11.0}}
       ]
      ])
    }
