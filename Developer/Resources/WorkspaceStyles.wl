@@ -145,9 +145,9 @@ Cell[
 
 (* ::**************************************************************************************************************:: *)
 (* ::Section::Closed:: *)
-(*CodeAssistanceWelcomeCell*)
+(*NotebookAssistanceWelcomeCell*)
 Cell[
-    StyleData[ "CodeAssistanceWelcomeCell" ],
+    StyleData[ "NotebookAssistanceWelcomeCell" ],
     CellMargins          -> { { 10, 10 }, { 30, 10 } },
     ShowStringCharacters -> False,
     TaggingRules         -> <| "ChatNotebookSettings" -> <| "ExcludeFromChat" -> True |> |>
@@ -193,9 +193,9 @@ Cell[
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsection::Closed:: *)
-(*WelcomeToCodeAssistanceSplash*)
+(*WelcomeToNotebookAssistanceSplash*)
 Cell[
-    StyleData[ "WelcomeToCodeAssistanceSplash" ],
+    StyleData[ "WelcomeToNotebookAssistanceSplash" ],
     TemplateBoxOptions -> {
         DisplayFunction -> Function @ Evaluate @ ToBoxes @ Framed[
             Pane[
