@@ -253,19 +253,28 @@ attachedWorkspaceChatInputCell[ location_String ] := Cell[
                         {
                             RawBoxes @ TemplateBox[ { }, "ChatIconUser" ],
                             Framed[
-                                InputField[
-                                    Dynamic @ CurrentValue[
-                                        EvaluationNotebook[ ],
-                                        { TaggingRules, "ChatInputString" }
-                                    ],
-                                    String,
-                                    $inputFieldOptions
+                                Grid[
+                                    {
+                                        {
+                                            InputField[
+                                                Dynamic @ CurrentValue[
+                                                    EvaluationNotebook[ ],
+                                                    { TaggingRules, "ChatInputString" }
+                                                ],
+                                                String,
+                                                Alignment -> { Automatic, Baseline },
+                                                FrameMargins -> { { 3, 3 }, { 2, 2 } },
+                                                $inputFieldOptions
+                                            ],
+                                            sendChatButton @ thisNB
+                                        }
+                                    },
+                                    Alignment -> { Automatic, Baseline }
                                 ],
-                                $inputFieldFrameOptions
-                            ],
-                            workspaceChatInitializer @ RawBoxes @ TemplateBox[
-                                { RGBColor[ "#a3c9f2" ], RGBColor[ "#f1f7fd" ], 27, thisNB },
-                                "WorkspaceSendChatButton"
+                                Alignment    -> { Automatic, Baseline },
+                                Background   -> White,
+                                FrameMargins -> 2,
+                                FrameStyle   -> Directive[ AbsoluteThickness[ 2 ], RGBColor[ "#66add2" ] ]
                             ]
                         }
                     },
@@ -303,6 +312,18 @@ attachedWorkspaceChatInputCell[ location_String ] := Cell[
     Selectable    -> True
 ];
 (* :!CodeAnalysis::EndBlock:: *)
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*sendChatButton*)
+sendChatButton // beginDefinition;
+
+sendChatButton[ nbo_ ] := workspaceChatInitializer @ RawBoxes @ TemplateBox[
+    { RGBColor[ "#66add2" ], RGBColor[ "#f1f7fd" ], 27, nbo },
+    "WorkspaceSendChatButton"
+];
+
+sendChatButton // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsubsection::Closed:: *)
